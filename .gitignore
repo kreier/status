@@ -1,0 +1,19 @@
+# Synology Diskstation
+.DS_Store
+
+# Real settings and secrets — never commit these
+config.yaml
+*.env
+.env
+cloudflared/*.json
+*credentials*
+
+# Generated state
+state/
+*.db
+*.sqlite
+
+# Python
+__pycache__/
+*.pyc
+.venv/

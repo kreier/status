@@ -1,0 +1,37 @@
+# Copy this to config.yaml (git-ignored) and fill in real values.
+# config.yaml is the source of truth on the Pi — nothing here is a secret.
+
+repos:
+  kreier/status:
+    category: infrastructure
+    display_name: Status Page
+  # kreier/some-other-repo:
+  #   category: hobby
+  #   display_name: Some Other Repo
+
+categories:
+  - infrastructure
+  - hobby
+  - learning
+
+collectors:
+  pi_stats:
+    interval_minutes: 1
+  room_temp:
+    interval_minutes: 1
+  ac_state:
+    interval_minutes: 1
+  speedtest:
+    interval_minutes: 120
+  nas_images:
+    interval_minutes: 1440
+  github_repos:
+    interval_minutes: 1440
+
+nas:
+  # what "image count" means for this deployment
+  share: photos
+
+site:
+  title: hv.io.vn status
+  timezone: Asia/Ho_Chi_Minh
