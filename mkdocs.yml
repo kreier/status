@@ -1,0 +1,25 @@
+site_name: hv.io.vn/status — documentation
+site_description: How hv.io.vn/status is built and deployed. This is documentation, not the live page.
+site_url: https://kreier.github.io/status/
+repo_url: https://github.com/kreier/status
+docs_dir: docs
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+nav:
+  - Home: index.md
+  - Architecture: ARCHITECTURE.md
+  - Hardware: HARDWARE.md
+  - Schema: SCHEMA.md
