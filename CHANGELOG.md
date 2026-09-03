@@ -7,7 +7,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - Initial repo scaffold: README, AGENTS.md, TODO.md, this changelog
-- docs/ARCHITECTURE.md — data flow and Cloudflare Tunnel design
-- docs/SCHEMA.md — status.json / collector output schema, hash-guard pattern
-- docs/HARDWARE.md — inventory template for what's running on the Pi
-- config/config.example.yaml — example settings file
+- ARCHITECTURE.md, HARDWARE.md, SCHEMA.md
+- config.example.yaml
+- Docker Compose setup: `collectors` + `web` (Caddy) + `cloudflared` services
+- `collectors/common.py`: config loading, hash-guard pattern, status.json writer, history log
+- `collectors/scheduler.py`: per-collector interval scheduling
+- Collectors: `pi_stats.py` and `github_repos.py` (fully implemented),
+  `speedtest_collector.py` (implemented, logs history for future heatmap),
+  `room_temp.py`, `ac_state.py`, `nas_images.py` (stubs pending hardware decisions)
+- `frontend/`: static page (index.html, style.css, app.js) rendering status.json as cards,
+  polling every 60s, dark-mode aware
+- `.env.example` for Cloudflare Tunnel token and GitHub credentials

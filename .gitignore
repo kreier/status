@@ -17,3 +17,6 @@ state/
 __pycache__/
 *.pyc
 .venv/
+
+# Ignore build artifacts from mkdocs
+site/

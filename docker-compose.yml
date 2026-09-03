@@ -1,0 +1,42 @@
+services:
+  collectors:
+    build: ./collectors
+    container_name: status-collectors
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - status-data:/data
+    networks:
+      - status-net
+
+  web:
+    image: caddy:2-alpine
+    container_name: status-web
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/srv:ro
+      - status-data:/srv/data:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    networks:
+      - status-net
+    # Only reachable on the Pi's own loopback - cloudflared is the only path in from outside.
+    ports:
+      - "127.0.0.1:8080:80"
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: status-cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    env_file: .env  # provides TUNNEL_TOKEN
+    depends_on:
+      - web
+    networks:
+      - status-net
+
+volumes:
+  status-data:
+
+networks:
+  status-net:
