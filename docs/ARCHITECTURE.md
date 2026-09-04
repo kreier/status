@@ -3,9 +3,9 @@
 ## Data flow
 
 1. Collector scripts run on the Pi 4, each on its own schedule, orchestrated by
-   `collectors/scheduler.py`.
+   `scheduler.py`.
 2. Each collector writes its entries into a shared `status.json` (merged by id - see
-   `common.write_entries`).
+   `core.status.write_entries`).
 3. A Caddy web server serves the static frontend and `status.json`.
 4. `cloudflared` runs as its own container, holding an outbound connection to Cloudflare.
    No inbound port is opened on the home router.
@@ -26,7 +26,7 @@ Three containers, one `docker-compose.yml`:
 
 | Service       | Image / build         | Role                                             |
 |---------------|------------------------|---------------------------------------------------|
-| `collectors`  | built from `collectors/` | runs `scheduler.py`, writes to a shared volume  |
+| `collectors`  | built from repo root   | runs `scheduler.py`, writes to a shared volume  |
 | `web`         | `caddy:2-alpine`       | serves `frontend/` + the shared volume's `status.json` |
 | `cloudflared` | `cloudflare/cloudflared` | tunnels `web` out to `hv.io.vn/status`         |
 

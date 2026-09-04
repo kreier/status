@@ -18,9 +18,9 @@ Rough phases, roughly in order. Not all details are decided - pick the next unch
 
 ## Phase 2 - collector framework
 - [x] Shared helper module: `run_if_changed()` hash-guard pattern, state read/write
-      (collectors/common.py)
+      (core/)
 - [x] config.example.yaml finalized, config.yaml loading logic
-- [x] Scheduler (`collectors/scheduler.py`) respecting each collector's own interval
+- [x] Scheduler (`scheduler.py`) respecting each collector's own interval
 
 ## Phase 3 - collectors
 - [x] `pi_stats.py` - uptime, memory, load (1 min)
