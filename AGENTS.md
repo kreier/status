@@ -13,8 +13,8 @@ docs/ARCHITECTURE.md, docs/SCHEMA.md.
 ## Core design principles - don't violate these
 
 1. **Collectors are independent and modular.** One module per data source, grouped by
-   category under `collectors/sources/<category>/` (system, network, home, github, ...). A
-   collector must never import another collector. Shared logic lives in `collectors/core/`
+   category under `sources/<category>/` (system, network, home, github, ...). A
+   collector must never import another collector. Shared logic lives in `core/`
    (`config.py`, `state.py`, `status.py`), not copy-pasted.
 2. **Cheap check before expensive work.** Any collector whose source rarely changes (GitHub
    repos, NAS image count) must hash a cheap fingerprint of the source first via
@@ -38,11 +38,11 @@ docs/ARCHITECTURE.md, docs/SCHEMA.md.
 
 ## Repo layout
 
-- `collectors/core/` - shared infrastructure (config loading, hash-guard, status.json
+- `core/` - shared infrastructure (config loading, hash-guard, status.json
   writer). Not a data source itself.
-- `collectors/sources/<category>/<name>.py` - one collector per file, exposing a `collect()`
+- `sources/<category>/<name>.py` - one collector per file, exposing a `collect()`
   function that returns its entries and also calls `core.status.write_entries()` itself.
-- `collectors/scheduler.py` - entry point; maps collector name -> module path, runs each on
+- `scheduler.py` - entry point; maps collector name -> module path, runs each on
   its configured interval.
 - `frontend/` - plain HTML/JS/CSS, no build step, served by Caddy. Fetches
   `data/status.json` client-side.
@@ -54,13 +54,11 @@ docs/ARCHITECTURE.md, docs/SCHEMA.md.
 
 ## Adding a new collector
 
-1. Pick (or create) a category folder under `collectors/sources/`.
+1. Pick (or create) a category folder under `sources/`.
 2. Write `<name>.py` with a `collect()` function using `core.config`, `core.state`,
    `core.status` as needed.
-3. Register it in `COLLECTOR_MODULES` in `collectors/scheduler.py`.
+3. Register it in `COLLECTOR_MODULES` in `scheduler.py`.
 4. Add its interval under `collectors:` in `config.example.yaml`.
-5. If its output shape is unusual (like `github_repos`' list-valued entry), note it in
-   docs/SCHEMA.md.
 
 ## When you finish a task
 

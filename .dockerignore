@@ -1,0 +1,15 @@
+frontend/
+docs/
+.github/
+.git/
+.env
+config.yaml
+common.py
+Caddyfile
+docker-compose.yml
+mkdocs.yml
+README.md
+AGENTS.md
+CHANGELOG.md
+TODO.md
+LICENSE

@@ -1,6 +1,6 @@
 services:
   collectors:
-    build: ./collectors
+    build: .
     container_name: status-collectors
     restart: unless-stopped
     env_file: .env

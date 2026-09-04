@@ -25,8 +25,14 @@ status/
 ├── Caddyfile
 ├── .env.example
 ├── config.example.yaml
-├── collectors/            # one script per data source
-├── frontend/               # static page that renders status.json
+├── core/                  # shared config, hash-guard, status.json writer
+├── sources/               # one collector per file, grouped by category
+│   ├── system/            #   pi_stats.py
+│   ├── network/           #   speedtest_collector.py
+│   ├── home/              #   room_temp.py, ac_state.py, nas_images.py
+│   └── github/            #   github_repos.py
+├── scheduler.py           # entry point, per-collector intervals
+├── frontend/              # static page that renders status.json
 │
 ├── docs/                  # GitHub Pages source — documentation, not code
 │   ├── index.md
