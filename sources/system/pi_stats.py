@@ -4,7 +4,7 @@ import time
 
 import psutil
 
-from common import write_entries
+from core.status import write_entries
 
 
 def collect():

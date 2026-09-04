@@ -5,6 +5,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Reorganized collectors/ from a flat file list into core/ (shared config, hash-guard,
+  status.json writer) and sources/<category>/ (one collector per file, grouped by
+  category: system, network, home, github)
+- scheduler.py updated to import collectors from their new module paths
+
 ### Added
 - Initial repo scaffold: README, AGENTS.md, TODO.md, this changelog
 - ARCHITECTURE.md, HARDWARE.md, SCHEMA.md

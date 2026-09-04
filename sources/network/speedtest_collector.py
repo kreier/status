@@ -3,7 +3,7 @@ it more often. Logs to history (for the heatmap) in addition to the latest-value
 
 import speedtest
 
-from common import append_history, write_entries
+from core.status import append_history, write_entries
 
 
 def collect():

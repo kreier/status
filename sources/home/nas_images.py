@@ -3,7 +3,8 @@ API, SSH). The hash-guard scaffolding is already wired: fetch_listing() should s
 (file count + total size + latest mtime, not a full walk); do the expensive per-file
 categorization inside process() only, since that only runs when the cheap listing changes."""
 
-from common import run_if_changed, write_entries
+from core.state import run_if_changed
+from core.status import write_entries
 
 
 def fetch_listing():
