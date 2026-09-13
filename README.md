@@ -15,9 +15,9 @@ Kernel       6.18.x
 Architecture armhf
 Uptime       14 days
 
-Application  v0.4.2
-Status       v0.2.0
-Updater      v0.1.1
+Application  v0.1.0
+Status       v0.1.0
+Updater      v0.1.0
 
 Updates available: YES
 
@@ -25,7 +25,7 @@ Updates available: YES
 [Update]
 ```
 
-- **Host Metrics**: Host system OS (e.g. Armbian), Linux kernel, architecture (`armhf`, `arm64`, `amd64`), and uptime.
+- **Host Metrics**: Host system OS (e.g. Armbian, Debian, Ubuntu), Linux kernel, architecture (`armhf`, `arm64`, `amd64`), and uptime.
 - **Component Versions**: Version tracking for host applications, status service, and updater.
 - **Actions & API**: Interactive `[Check]` and `[Update]` buttons powered by an extensible `/status/api` REST endpoint.
 - **Dual Routing**: Functions seamlessly at direct local URLs (`http://<host>/status`) and behind reverse proxies like Traefik (`https://<host>.hv.io.vn/status/`).
@@ -47,14 +47,14 @@ services:
       - /etc/os-release:/host/etc/os-release:ro
       - /etc/hostname:/host/etc/hostname:ro
       - /proc:/host/proc:ro
+      # Optional: mount trigger directory for one-click updates (Method B)
+      # - ./trigger:/host/trigger:rw
     environment:
       - MACHINE_NAME=RK3229 # Optional override (otherwise detected automatically)
-      - APPLICATION_VERSION=v0.4.2
-      - UPDATER_VERSION=v0.1.1
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.status.rule=Host(`rk3229.hv.io.vn`) && PathPrefix(`/status`)"
-      - "traefik.http.routers.status.entrypoints=websecure"
+      - "traefik.http.routers.status.rule=(Host(`rk3229.hv.io.vn`) || Host(`rk3229`) || Host(`localhost`)) && PathPrefix(`/status`)"
+      - "traefik.http.routers.status.entrypoints=web,websecure"
       - "traefik.http.routers.status.tls=true"
       - "traefik.http.services.status.loadbalancer.server.port=8000"
 ```
@@ -72,10 +72,13 @@ Access the dashboard:
 
 ## Multi-Architecture Container Support
 
-Images are automatically built and published via GitHub Actions to `ghcr.io/kreier/status` for:
-- `linux/arm/v7` (32-bit ARM, e.g. Rockchip RK3229 TV boxes, Raspberry Pi 2/3 32-bit)
-- `linux/arm64` (64-bit ARM, e.g. Raspberry Pi 4/5, Apple Silicon)
-- `linux/amd64` (Standard x86_64 servers and PCs)
+Images are packaged as lightweight multi-architecture containers (~11–15 MB compressed) published to `ghcr.io/kreier/status`:
+- `linux/arm/v7`: 32-bit ARM (Rockchip RK3229 TV boxes, Raspberry Pi 2/3 32-bit)
+- `linux/arm64`: 64-bit ARM (Raspberry Pi 4/5, Apple Silicon via Docker Desktop)
+- `linux/amd64`: Standard x86_64 PCs, cloud servers, and Windows WSL2
+
+*(Note: macOS and Windows WSL2 run Linux containers natively using the `linux/arm64` and `linux/amd64` images).*
+
 
 ## API Endpoints
 
