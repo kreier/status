@@ -35,7 +35,14 @@ Updates available: YES
 
 ## Quick Start (Docker Compose)
 
-Create a directory on your machine (e.g. `mkdir -p ~/status && cd ~/status`) with the following `docker-compose.yml`:
+We recommend deploying in `/srv/status` (or `/src/status`) to provide a clean, predictable location for `systemd` automation:
+
+```bash
+sudo mkdir -p /srv/status/trigger && sudo chmod 777 /srv/status/trigger
+cd /srv/status
+```
+
+Create `docker-compose.yml`:
 
 ```yaml
 services:
@@ -50,10 +57,10 @@ services:
       - /etc/os-release:/host/etc/os-release:ro
       - /etc/hostname:/host/etc/hostname:ro
       - /proc:/host/proc:ro
-      # Optional: mount tuptime database if tuptime is installed
+      # Optional: mount host tuptime database if tuptime is installed
       - /var/lib/tuptime:/host/var/lib/tuptime:ro
-      # Optional: mount trigger directory for one-click updates (Method B)
-      # - ./trigger:/host/trigger:rw
+      # Mount trigger directory for one-click updates (Method B)
+      - ./trigger:/host/trigger:rw
     environment:
       - MACHINE_NAME=RK3229 # Optional override (otherwise detected automatically)
     labels:

@@ -42,17 +42,55 @@ Even if an attacker completely compromises the web application, they can only cr
 
 ---
 
-### Setup Instructions for Method B on Your Machine (Pi 4 / RK3229)
+### Recommended Setup: Method B (Decoupled Host Trigger)
 
-#### Step 1: Create the trigger folder
-In your status directory on the machine (e.g. `/srv/status` or `~/status`):
-```bash
-mkdir -p /srv/status/trigger
-chmod 777 /srv/status/trigger
+We strongly recommend installing your status container in `/srv/status` (or `/src/status`), as standard server directories avoid user-specific path ambiguities and permission issues when `systemd` runs as `root`.
+
+#### Overview of the Architecture
+
+```
+┌──────────────────────────────────────┐
+│       Container (unprivileged)       │
+│                                      │
+│  User clicks [Update]                │
+│       │                              │
+│       ▼                              │
+│  Writes /host/trigger/update         │
+└──────────────────┬───────────────────┘
+                   │ Mounted volume (- ./trigger:/host/trigger:rw)
+                   ▼
+┌──────────────────────────────────────┐
+│           Host Filesystem            │
+│                                      │
+│  1. /srv/status/trigger/update       │
+│       │ (Detected by inotify)        │
+│       ▼                              │
+│  2. status-updater.path              │
+│       │ (Triggers)                   │
+│       ▼                              │
+│  3. status-updater.service           │
+│       │ (Executes as root)           │
+│       ▼                              │
+│  4. /usr/local/bin/status-updater.sh │
+│       │                              │
+│       ├─► rm -f trigger/update       │
+│       ├─► cd /srv/status             │
+│       ├─► docker compose pull        │
+│       └─► docker compose up -d       │
+└──────────────────────────────────────┘
 ```
 
-#### Step 2: Add the trigger volume mount to `docker-compose.yml`
-Ensure `./trigger:/host/trigger:rw` is mounted into the `status` container:
+#### Step 1: Set up the recommended directory `/srv/status`
+
+```bash
+# Create the recommended directory structure
+sudo mkdir -p /srv/status/trigger
+sudo chmod 777 /srv/status/trigger
+cd /srv/status
+```
+
+#### Step 2: Configure `docker-compose.yml`
+Save `docker-compose.yml` in `/srv/status/`:
 
 ```yaml
 services:
@@ -60,74 +98,110 @@ services:
     image: ghcr.io/kreier/status:latest
     container_name: status
     restart: unless-stopped
+    ports:
+      - "80:8000"
     volumes:
       - /etc/os-release:/host/etc/os-release:ro
       - /etc/hostname:/host/etc/hostname:ro
       - /proc:/host/proc:ro
+      - /var/lib/tuptime:/host/var/lib/tuptime:ro
       - ./trigger:/host/trigger:rw
-    # ... your ports or traefik labels ...
+    environment:
+      - MACHINE_NAME=RK3229 # Or PI4
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.status.rule=(Host(`rk3229.hv.io.vn`) || Host(`rk3229`) || Host(`localhost`)) && PathPrefix(`/status`)"
+      - "traefik.http.routers.status.entrypoints=web,websecure"
+      - "traefik.http.routers.status.tls=true"
+      - "traefik.http.services.status.loadbalancer.server.port=8000"
 ```
 
-#### Step 3: Create the systemd service on the host
-Create `/etc/systemd/system/status-updater.service`:
+#### Step 3: Create `/usr/local/bin/status-updater.sh`
+This script executes the update safely on the host when triggered:
+
 ```bash
-sudo nano /etc/systemd/system/status-updater.service
+sudo tee /usr/local/bin/status-updater.sh > /dev/null << 'EOF'
+#!/bin/bash
+set -e
+
+# Target directory containing docker-compose.yml:
+STATUS_DIR="/srv/status"
+TRIGGER_FILE="$STATUS_DIR/trigger/update"
+
+echo "[$(date)] Update triggered by status container."
+rm -f "$TRIGGER_FILE"
+
+if [ -d "$STATUS_DIR" ]; then
+    cd "$STATUS_DIR"
+    /usr/bin/docker compose pull
+    /usr/bin/docker compose up -d --force-recreate
+    echo "v0.1.0" > "$STATUS_DIR/trigger/updater_version"
+    echo "[$(date)] Update complete."
+else
+    echo "ERROR: Status directory $STATUS_DIR not found!"
+    exit 1
+fi
+EOF
+
+sudo chmod +x /usr/local/bin/status-updater.sh
 ```
-Paste:
-```ini
+
+#### Step 4: Create `/etc/systemd/system/status-updater.service`
+Defines the `systemd` one-shot service executing the updater script:
+
+```bash
+sudo tee /etc/systemd/system/status-updater.service > /dev/null << EOF
 [Unit]
-Description=Host Status Container Updater
+Description=Update Status Container
 After=docker.service
 
 [Service]
 Type=oneshot
-WorkingDirectory=/srv/status
-ExecStartPre=/bin/sh -c 'echo "v0.1.0" > /srv/status/trigger/updater_version'
-ExecStartPre=/bin/sleep 2
-ExecStart=/usr/bin/docker compose pull
-ExecStart=/usr/bin/docker compose up -d --remove-orphans
-ExecStopPost=/bin/rm -f /srv/status/trigger/update
-User=root
-```
-*(Note: If your status directory is `~/status`, adjust `WorkingDirectory` and `trigger` path accordingly).*
+ExecStart=/usr/local/bin/status-updater.sh
 
-#### Step 4: Create the systemd path monitor on the host
-Create `/etc/systemd/system/status-updater.path`:
-```bash
-sudo nano /etc/systemd/system/status-updater.path
+[Install]
+WantedBy=multi-user.target
+EOF
 ```
-Paste:
-```ini
+
+#### Step 5: Create `/etc/systemd/system/status-updater.path`
+Monitors the trigger file for write events using Linux `inotify`:
+
+```bash
+sudo tee /etc/systemd/system/status-updater.path > /dev/null << EOF
 [Unit]
-Description=Monitor /srv/status/trigger/update for update triggers
+Description=Monitor Status Trigger File
 
 [Path]
-PathExists=/srv/status/trigger/update
+PathModified=/srv/status/trigger/update
 Unit=status-updater.service
 
 [Install]
 WantedBy=multi-user.target
+EOF
 ```
 
-#### Step 5: Enable and start the monitor
+#### Step 6: Enable and start the monitor
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable --now status-updater.path
 ```
 
-Verify it is active:
+Verify the monitor status:
 ```bash
 sudo systemctl status status-updater.path
 ```
-It will show `Active: active (waiting)`.
+It should show: `Active: active (waiting)`.
 
-Now, whenever you click **`[Update]`** in the UI:
-1. The container writes the trigger.
-2. Systemd executes the update on the host.
-3. You can monitor the logs anytime on the host with:
-   ```bash
-   journalctl -u status-updater.service -f
-   ```
+#### Step 7: Troubleshooting and verification
+- **Trigger an update manually to test:**
+  ```bash
+  sudo systemctl start status-updater.service
+  ```
+- **Inspect update logs:**
+  ```bash
+  journalctl -u status-updater.service -n 30 --no-pager
+  ```
 
 ---
 

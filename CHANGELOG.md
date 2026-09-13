@@ -5,6 +5,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Documentation
+- Updated `docs/UPDATES.md` and `README.md` with complete architecture diagram and setup guide recommending `/srv/status` (or `/src/status`) for the decoupled host updater.
+
 ## [0.2.1] - 2026-09-14
 
 ### Added
