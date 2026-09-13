@@ -324,27 +324,50 @@ def check_updates() -> Dict[str, Any]:
 
     try:
         import urllib.request
-        url = f"https://api.github.com/repos/{repo}/releases/latest"
+
+        # 1. Check via GitHub HTML releases redirect (avoids unauthenticated API rate limits)
+        html_url = f"https://github.com/{repo}/releases/latest"
         req = urllib.request.Request(
-            url,
+            html_url,
             headers={
+                "User-Agent": "status-monitor/0.1.0 (Mozilla/5.0)",
+            },
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                final_url = resp.geturl()
+                if "/releases/tag/" in final_url:
+                    latest_ver = final_url.split("/releases/tag/")[-1].strip()
+        except Exception:
+            pass
+
+        # 2. Fallback to GitHub REST API if not resolved by redirect
+        if not latest_ver:
+            url = f"https://api.github.com/repos/{repo}/releases/latest"
+            headers = {
                 "User-Agent": "status-monitor/0.1.0",
                 "Accept": "application/vnd.github.v3+json",
             }
-        )
-        with urllib.request.urlopen(req, timeout=4) as resp:
-            if resp.status == 200:
-                data = json.loads(resp.read().decode("utf-8"))
-                latest_ver = data.get("tag_name", "").strip()
-                if latest_ver:
-                    curr_tuple = _parse_semver(status_ver)
-                    latest_tuple = _parse_semver(latest_ver)
-                    if latest_tuple > curr_tuple:
-                        avail = True
-                        message = f"New version available: {latest_ver}"
-                    else:
-                        avail = False
-                        message = f"Up to date ({status_ver})"
+            token = os.environ.get("GITHUB_TOKEN")
+            if token:
+                headers["Authorization"] = f"Bearer {token}"
+            req_api = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req_api, timeout=5) as resp:
+                if resp.status == 200:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    latest_ver = data.get("tag_name", "").strip()
+
+        if latest_ver:
+            curr_tuple = _parse_semver(status_ver)
+            latest_tuple = _parse_semver(latest_ver)
+            if latest_tuple > curr_tuple:
+                avail = True
+                message = f"New version available: {latest_ver}"
+            else:
+                avail = False
+                message = f"Up to date ({status_ver})"
+        else:
+            message = f"Up to date ({status_ver})"
     except Exception as e:
         # Fallback to cached state or report offline check
         if _update_state.get("checked"):
@@ -354,7 +377,7 @@ def check_updates() -> Dict[str, Any]:
                 "message": _update_state.get("message", "Up to date"),
                 "latest_version": _update_state.get("latest_version"),
             }
-        message = "Could not check remote version"
+        message = f"Remote check unavailable ({type(e).__name__})"
 
     _update_state["checked"] = True
     _update_state["available"] = avail
