@@ -1,42 +1,39 @@
 services:
-  collectors:
-    build: .
-    container_name: status-collectors
+  status:
+    image: ghcr.io/kreier/status:latest
+    container_name: status
     restart: unless-stopped
-    env_file: .env
-    volumes:
-      - ./config.yaml:/app/config.yaml:ro
-      - status-data:/data
-    networks:
-      - status-net
-
-  web:
-    image: caddy:2-alpine
-    container_name: status-web
-    restart: unless-stopped
-    volumes:
-      - ./frontend:/srv:ro
-      - status-data:/srv/data:ro
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-    networks:
-      - status-net
-    # Only reachable on the Pi's own loopback - cloudflared is the only path in from outside.
     ports:
-      - "127.0.0.1:8080:80"
-
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: status-cloudflared
-    restart: unless-stopped
-    command: tunnel run
-    env_file: .env  # provides TUNNEL_TOKEN
-    depends_on:
-      - web
+      # Direct local access, e.g. http://rk3229/status or http://<ip>/status
+      - "80:8000"
+    volumes:
+      # Read-only host mounts for system inspection
+      - /etc/os-release:/host/etc/os-release:ro
+      - /etc/hostname:/host/etc/hostname:ro
+      - /proc:/host/proc:ro
+      # Optional: mount custom config or version file
+      # - ./config.yaml:/app/config.yaml:ro
+    environment:
+      # Optional overrides:
+      # - MACHINE_NAME=RK3229
+      # - APPLICATION_VERSION=v0.4.2
+      # - UPDATER_VERSION=v0.1.1
+      - PORT=8000
+    labels:
+      # Traefik reverse proxy configuration:
+      - "traefik.enable=true"
+      # Match both remote hostname and local network routes
+      - "traefik.http.routers.status.rule=Host(`rk3229.hv.io.vn`) && PathPrefix(`/status`)"
+      - "traefik.http.routers.status.entrypoints=websecure"
+      - "traefik.http.routers.status.tls=true"
+      - "traefik.http.routers.status.tls.certresolver=letsencrypt"
+      - "traefik.http.services.status.loadbalancer.server.port=8000"
     networks:
-      - status-net
-
-volumes:
-  status-data:
+      - default
+      # Uncomment if using an external Traefik proxy network:
+      # - traefik-net
 
 networks:
-  status-net:
+  default:
+  # traefik-net:
+  #   external: true

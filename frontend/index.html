@@ -3,15 +3,74 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>hv.io.vn status</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Status</title>
+  <link rel="stylesheet" href="style.css?v=0.1.0">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2240%22 fill=%22%2310b981%22/%3E%3C/svg%3E">
 </head>
 <body>
-  <header>
-    <h1>hv.io.vn status</h1>
-    <p id="last-updated" class="muted"></p>
-  </header>
-  <main id="cards"></main>
-  <script src="app.js"></script>
+  <div class="container">
+    <div class="status-card">
+      <div class="card-header">
+        <h1 id="machine-name">Machine</h1>
+        <span class="indicator-dot" title="Online"></span>
+      </div>
+      <div class="divider">────────────────────────</div>
+
+      <div class="stat-group">
+        <div class="stat-row">
+          <span class="label">System</span>
+          <span class="value" id="system-os">--</span>
+        </div>
+        <div class="stat-row">
+          <span class="label">Kernel</span>
+          <span class="value" id="kernel-version">--</span>
+        </div>
+        <div class="stat-row">
+          <span class="label">Architecture</span>
+          <span class="value" id="architecture">--</span>
+        </div>
+        <div class="stat-row">
+          <span class="label">Uptime</span>
+          <span class="value" id="uptime">--</span>
+        </div>
+      </div>
+
+      <div class="divider-sub"></div>
+
+      <div class="stat-group">
+        <div class="stat-row">
+          <span class="label">Application</span>
+          <span class="value" id="app-version">--</span>
+        </div>
+        <div class="stat-row">
+          <span class="label">Status</span>
+          <span class="value" id="status-version">--</span>
+        </div>
+        <div class="stat-row">
+          <span class="label">Updater</span>
+          <span class="value" id="updater-version">--</span>
+        </div>
+      </div>
+
+      <div class="divider-sub"></div>
+
+      <div class="update-status-row">
+        <span class="label">Updates available:</span>
+        <span class="update-badge" id="updates-available">--</span>
+      </div>
+
+      <div class="actions">
+        <button id="btn-check" class="btn" type="button">[Check]</button>
+        <button id="btn-update" class="btn btn-primary" type="button">[Update]</button>
+      </div>
+
+      <div id="action-feedback" class="action-feedback"></div>
+      <div class="footer muted" id="footer-info">
+        <span id="last-updated">Connecting...</span>
+        <span class="footer-links"> &middot; <a id="api-link" href="api/status" target="_blank">API</a></span>
+      </div>
+    </div>
+  </div>
+  <script src="app.js?v=0.1.0"></script>
 </body>
 </html>

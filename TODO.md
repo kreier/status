@@ -8,11 +8,16 @@ Rough phases, roughly in order. Not all details are decided - pick the next unch
 - [x] `.gitignore`: state/, config.yaml, .env, credentials
 - [ ] Fill in HARDWARE.md with actual Pi/NAS/sensor specifics
 
-## Phase 1 - infrastructure
+## Phase 1 - infrastructure & host status container
+- [x] Host inspection utility (`core/host_info.py`)
+- [x] Web server and extensible API (`app.py`, `/status/api`)
+- [x] Status card UI with interactive Check and Update actions
+- [x] Multi-architecture Docker image publishing (`ghcr.io/kreier/status` with `armhf`/`arm64`/`amd64`)
+- [x] Standard `docker-compose.yml` supporting host mounts, local direct access, and Traefik reverse proxy
 - [ ] Create Cloudflare Tunnel (Docker connector) in the Zero Trust dashboard, get token
 - [ ] Add public hostname route: hv.io.vn -> /status* -> http://web:80
-- [x] docker-compose.yml: collectors + web (Caddy) + cloudflared
-- [ ] First `docker compose up -d --build` on the Pi, confirm hv.io.vn/status loads
+- [ ] Deploy to RK3229 with `docker compose up -d`
+
 - [ ] (Optional) Cloudflare Access application in front of a future settings UI, GitHub OAuth
       restricted to own username
 

@@ -20,7 +20,16 @@
 - Cloudflare Access can be layered on top later (e.g. for a settings UI) without any extra
   network changes.
 
-## Docker Compose deployment
+## Host Status Container Architecture
+
+The host status container is packaged as a single, multi-architecture image (`ghcr.io/kreier/status`) that runs on any machine via Docker Compose:
+
+1. **Host Inspection**: The container inspects the underlying machine using read-only host mounts (`/etc/os-release`, `/etc/hostname`, `/proc`), extracting OS distribution, kernel, architecture, and uptime.
+2. **Web & API Server**: An embedded web server (`app.py`) serves the static dashboard (`frontend/`) and the `/status/api` JSON endpoints.
+3. **Dual Routing**: Operates seamlessly both directly (`http://<host>/status`) and behind reverse proxies like Traefik (`https://<host>.hv.io.vn/status/`) with built-in subpath handling.
+4. **Action Handlers**: Provides check and update endpoints (`/status/api/check`, `/status/api/update`) to coordinate maintenance.
+
+## Multi-container Collector Architecture (Legacy / Composite)
 
 Three containers, one `docker-compose.yml`:
 
