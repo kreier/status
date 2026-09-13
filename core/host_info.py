@@ -11,7 +11,7 @@ import socket
 import sqlite3
 from typing import Any, Dict, Optional
 
-STATUS_VERSION = "v0.1.0"
+STATUS_VERSION = "v0.2.0"
 
 # In-memory state for update checking
 _update_state = {
@@ -330,7 +330,7 @@ def check_updates() -> Dict[str, Any]:
         req = urllib.request.Request(
             html_url,
             headers={
-                "User-Agent": "status-monitor/0.1.0 (Mozilla/5.0)",
+                "User-Agent": f"status-monitor/{STATUS_VERSION} (Mozilla/5.0)",
             },
         )
         try:
@@ -345,7 +345,7 @@ def check_updates() -> Dict[str, Any]:
         if not latest_ver:
             url = f"https://api.github.com/repos/{repo}/releases/latest"
             headers = {
-                "User-Agent": "status-monitor/0.1.0",
+                "User-Agent": f"status-monitor/{STATUS_VERSION}",
                 "Accept": "application/vnd.github.v3+json",
             }
             token = os.environ.get("GITHUB_TOKEN")
