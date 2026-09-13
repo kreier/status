@@ -45,5 +45,12 @@ class TestApp(unittest.TestCase):
                     data = json.loads(res.data)
                     self.assertEqual(data["machine"], "RK3229")
 
+                for path in ["/api/history", "/status/api/history", "/api/history?days=14"]:
+                    res = c.get(path)
+                    self.assertEqual(res.status_code, 200, f"Failed for {path}")
+                    data = json.loads(res.data)
+                    self.assertIn("available", data)
+                    self.assertIn("history", data)
+
 if __name__ == "__main__":
     unittest.main()

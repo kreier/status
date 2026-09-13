@@ -117,3 +117,43 @@ The host status container exposes its system inspection and version metrics as J
 - `POST /status/api/check` — Checks for available updates and returns updated status.
 - `POST /status/api/update` — Triggers update execution for host components.
 
+## Host Uptime History API (`/status/api/history`)
+
+Returns historical daily uptime percentage, uptime duration in seconds, and bad shutdowns computed from `tuptime` SQLite records:
+
+- **Query Parameters**:
+  - `days` (optional, default `90`, max `365`): Number of past days to compute.
+
+```json
+{
+  "available": true,
+  "days": 90,
+  "overall_rate": 99.98,
+  "overall_rate_formatted": "99.98%",
+  "total_bad_shutdowns": 1,
+  "history": [
+    {
+      "date": "2026-06-16",
+      "weekday": 1,
+      "uptime_pct": 100.0,
+      "uptime_seconds": 86400,
+      "total_seconds": 86400,
+      "bad_shutdowns": 0,
+      "status": "online"
+    },
+    {
+      "date": "2026-09-14",
+      "weekday": 0,
+      "uptime_pct": 100.0,
+      "uptime_seconds": 9840,
+      "total_seconds": 9840,
+      "bad_shutdowns": 0,
+      "status": "online"
+    }
+  ]
+}
+```
+
+- `uptime_pct`: `null` if the day was before the machine's recorded initial boot, or `0.0` to `100.0`.
+- `status`: `"online"`, `"offline"`, or `"unrecorded"`.
+

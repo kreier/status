@@ -48,6 +48,11 @@ body {
 .container {
   width: 100%;
   max-width: 440px;
+  transition: max-width 0.25s ease;
+}
+
+.container.wide {
+  max-width: 620px;
 }
 
 .status-card {
@@ -223,3 +228,215 @@ h1 {
   text-decoration: underline;
   color: var(--text-main);
 }
+
+.link-value {
+  cursor: pointer;
+  text-decoration: underline dotted;
+  transition: color 0.15s ease;
+}
+
+.link-value:hover {
+  color: var(--accent-green);
+}
+
+/* Navigation Tabs */
+.nav-tabs {
+  display: flex;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px;
+  margin-bottom: 1rem;
+  gap: 3px;
+}
+
+.tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 0.4rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.tab-btn:hover {
+  color: var(--text-main);
+}
+
+.tab-btn.active {
+  background: var(--card-bg);
+  color: var(--accent-green);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* Stats Metric Boxes */
+.history-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.history-stat-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem;
+  text-align: center;
+}
+
+.history-stat-box .h-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: block;
+}
+
+.history-stat-box .h-val {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-top: 2px;
+  display: block;
+}
+
+.history-stat-box .h-val.accent {
+  color: var(--accent-green);
+}
+
+/* Heatmap Grid */
+.heatmap-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+}
+
+.legend-box {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.heatmap-scroll {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.75rem;
+  overflow-x: auto;
+}
+
+.heatmap-grid {
+  display: flex;
+  gap: 3px;
+  min-width: max-content;
+}
+
+.heat-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.heat-cell {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background-color: var(--border);
+  cursor: pointer;
+  transition: transform 0.1s ease, filter 0.1s ease;
+}
+
+.heat-cell:hover {
+  transform: scale(1.4);
+  filter: brightness(1.25);
+  z-index: 10;
+}
+
+.heat-cell.heat-full {
+  background-color: #10b981;
+}
+
+.heat-cell.heat-high {
+  background-color: #34d399;
+}
+
+.heat-cell.heat-med {
+  background-color: #f59e0b;
+}
+
+.heat-cell.heat-low {
+  background-color: #ef4444;
+}
+
+.heat-cell.heat-none {
+  background-color: #3f3f46;
+}
+
+.heat-cell.heat-unrecorded {
+  background-color: transparent;
+  border: 1px dashed var(--border);
+}
+
+.heatmap-tooltip {
+  margin-top: 0.65rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Timeline Bars */
+.timeline-container {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.6rem 0.5rem;
+}
+
+.timeline-bar {
+  flex: 1;
+  height: 28px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s;
+}
+
+.timeline-bar:hover {
+  transform: scaleY(1.15);
+  opacity: 0.85;
+}
+
+.timeline-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 0.35rem;
+}
+

@@ -12,6 +12,12 @@ function apiUrl(endpoint) {
   return `${base}/api/${endpoint}`.replace(/\/+/g, "/");
 }
 
+// In-memory cache for uptime history to prevent redundant network requests
+const historyCache = {
+  364: null,
+  90: null,
+};
+
 async function loadStatus() {
   const lastUpdatedEl = document.getElementById("last-updated");
   const url = apiUrl("status");
@@ -116,6 +122,205 @@ function showFeedback(text, isError = false) {
   setTimeout(() => {
     fb.className = "action-feedback";
   }, 4000);
+}
+
+// Tab navigation
+function switchTab(tabId) {
+  const tabs = ["overview", "grid", "timeline"];
+  tabs.forEach((t) => {
+    const btn = document.getElementById(`btn-tab-${t}`);
+    const content = document.getElementById(`tab-content-${t}`);
+    if (btn) btn.classList.toggle("active", t === tabId);
+    if (content) content.style.display = t === tabId ? "block" : "none";
+  });
+
+  const mainContainer = document.getElementById("main-container");
+  if (mainContainer) {
+    mainContainer.classList.toggle("wide", tabId !== "overview");
+  }
+
+  if (tabId === "grid") {
+    loadAndRenderHeatmap();
+  } else if (tabId === "timeline") {
+    loadAndRenderTimeline();
+  }
+}
+window.switchTab = switchTab;
+
+async function fetchHistory(days) {
+  if (historyCache[days]) {
+    return historyCache[days];
+  }
+  try {
+    const res = await fetch(apiUrl(`history?days=${days}`));
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    historyCache[days] = data;
+    return data;
+  } catch (err) {
+    console.error(`[status] Failed to fetch history (${days} days):`, err);
+    return null;
+  }
+}
+
+async function loadAndRenderHeatmap() {
+  const data = await fetchHistory(364);
+  renderHeatmap(data);
+}
+
+async function loadAndRenderTimeline() {
+  const data = await fetchHistory(90);
+  renderTimeline(data);
+}
+
+function renderHeatmap(data) {
+  const gridContainer = document.getElementById("heatmap-grid-container");
+  if (!gridContainer) return;
+
+  if (!data || !data.available || !data.history || data.history.length === 0) {
+    setText("grid-rate", "--");
+    setText("grid-days", "0 Days");
+    setText("grid-bad", "--");
+    gridContainer.innerHTML = `
+      <div style="padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.8rem; width: 100%;">
+        Tuptime history is not available.<br>
+        <span style="font-size: 0.72rem;">Mount <code>/var/lib/tuptime</code> in docker-compose.yml to enable.</span>
+      </div>`;
+    updateGridTooltip("Tuptime database not mounted or empty.", "unrecorded");
+    return;
+  }
+
+  setText("grid-rate", data.overall_rate_formatted || "--");
+  setText("grid-days", `${data.history.length} Days`);
+  setText("grid-bad", `${data.total_bad_shutdowns}`);
+
+  gridContainer.innerHTML = "";
+  const history = data.history;
+  const weeks = Math.ceil(history.length / 7);
+
+  for (let w = 0; w < weeks; w++) {
+    const col = document.createElement("div");
+    col.className = "heat-col";
+    for (let d = 0; d < 7; d++) {
+      const idx = w * 7 + d;
+      if (idx >= history.length) break;
+      const item = history[idx];
+      const cell = document.createElement("div");
+      cell.className = "heat-cell";
+
+      let heatClass = "heat-full";
+      if (item.uptime_pct === null) {
+        heatClass = "heat-unrecorded";
+      } else if (item.uptime_pct >= 99.5) {
+        heatClass = "heat-full";
+      } else if (item.uptime_pct >= 95.0) {
+        heatClass = "heat-high";
+      } else if (item.uptime_pct >= 80.0) {
+        heatClass = "heat-med";
+      } else if (item.uptime_pct > 0.0) {
+        heatClass = "heat-low";
+      } else {
+        heatClass = "heat-none";
+      }
+      cell.classList.add(heatClass);
+
+      const hours = (item.uptime_seconds / 3600).toFixed(1);
+      const pctStr = item.uptime_pct !== null ? `${item.uptime_pct}%` : "No data";
+      const badStr = item.bad_shutdowns > 0 ? ` &middot; ${item.bad_shutdowns} bad stop${item.bad_shutdowns > 1 ? "s" : ""}` : "";
+      const tooltipMsg = `${item.date}: ${pctStr} uptime (${hours}h)${badStr}`;
+
+      cell.addEventListener("mouseenter", () => updateGridTooltip(tooltipMsg, item.status));
+      cell.addEventListener("click", () => updateGridTooltip(tooltipMsg, item.status));
+      col.appendChild(cell);
+    }
+    gridContainer.appendChild(col);
+  }
+}
+
+function updateGridTooltip(htmlContent, status) {
+  const tip = document.getElementById("grid-tooltip");
+  if (!tip) return;
+  const badgeColor = status === "offline" ? "#ef4444" : (status === "unrecorded" ? "#71717a" : "#10b981");
+  const badgeText = status ? status.toUpperCase() : "OK";
+  tip.innerHTML = `<span>${htmlContent}</span><span style="font-family:monospace; font-size:0.68rem; color:${badgeColor}; font-weight:600;">${badgeText}</span>`;
+}
+
+function renderTimeline(data) {
+  const container = document.getElementById("timeline-bars-container");
+  if (!container) return;
+
+  const statusSummary = document.getElementById("timeline-status-summary");
+
+  if (!data || !data.available || !data.history || data.history.length === 0) {
+    setText("timeline-rate", "--");
+    setText("timeline-incidents", "--");
+    if (statusSummary) {
+      statusSummary.textContent = "Unavailable";
+      statusSummary.style.color = "#71717a";
+    }
+    container.innerHTML = `
+      <div style="padding: 1rem; text-align: center; color: var(--text-muted); font-size: 0.8rem; width: 100%;">
+        Tuptime history is not available.<br>
+        <span style="font-size: 0.72rem;">Mount <code>/var/lib/tuptime</code> in docker-compose.yml to enable.</span>
+      </div>`;
+    updateTimelineTooltip("Tuptime database not mounted or empty.", "unrecorded");
+    return;
+  }
+
+  setText("timeline-rate", data.overall_rate_formatted || "--");
+  const badStops = data.total_bad_shutdowns || 0;
+  setText("timeline-incidents", `${badStops} bad stop${badStops !== 1 ? "s" : ""}`);
+
+  if (statusSummary) {
+    if (badStops === 0 && data.overall_rate >= 99.9) {
+      statusSummary.textContent = "Operational";
+      statusSummary.style.color = "#10b981";
+    } else if (data.overall_rate >= 98.0) {
+      statusSummary.textContent = "Degraded / Minor Outages";
+      statusSummary.style.color = "#f59e0b";
+    } else {
+      statusSummary.textContent = "Outages Detected";
+      statusSummary.style.color = "#ef4444";
+    }
+  }
+
+  container.innerHTML = "";
+  data.history.forEach((item) => {
+    const bar = document.createElement("div");
+    bar.className = "timeline-bar";
+
+    if (item.uptime_pct === null) {
+      bar.style.backgroundColor = "transparent";
+      bar.style.border = "1px dashed var(--border)";
+    } else if (item.bad_shutdowns > 0) {
+      bar.style.backgroundColor = "#ef4444";
+    } else if (item.uptime_pct >= 99.5) {
+      bar.style.backgroundColor = "#10b981";
+    } else if (item.uptime_pct >= 95.0) {
+      bar.style.backgroundColor = "#34d399";
+    } else if (item.uptime_pct >= 80.0) {
+      bar.style.backgroundColor = "#f59e0b";
+    } else {
+      bar.style.backgroundColor = "#3f3f46";
+    }
+
+    const hours = (item.uptime_seconds / 3600).toFixed(1);
+    const pctStr = item.uptime_pct !== null ? `${item.uptime_pct}%` : "No data";
+    const badStr = item.bad_shutdowns > 0 ? ` &middot; ${item.bad_shutdowns} bad stop${item.bad_shutdowns > 1 ? "s" : ""}` : "";
+    const tooltipMsg = `${item.date}: ${pctStr} uptime (${hours}h)${badStr}`;
+
+    bar.addEventListener("mouseenter", () => updateTimelineTooltip(tooltipMsg, item.bad_shutdowns > 0 ? "warning" : "ok"));
+    bar.addEventListener("click", () => updateTimelineTooltip(tooltipMsg, item.bad_shutdowns > 0 ? "warning" : "ok"));
+    container.appendChild(bar);
+  });
+}
+
+function updateTimelineTooltip(htmlContent, status) {
+  const tip = document.getElementById("timeline-tooltip");
+  if (!tip) return;
+  const badgeColor = status === "warning" ? "#ef4444" : (status === "unrecorded" ? "#71717a" : "#10b981");
+  const badgeText = status === "warning" ? "INCIDENT" : (status === "unrecorded" ? "UNRECORDED" : "OPERATIONAL");
+  tip.innerHTML = `<span>${htmlContent}</span><span style="font-family:monospace; font-size:0.68rem; color:${badgeColor}; font-weight:600;">${badgeText}</span>`;
 }
 
 function init() {

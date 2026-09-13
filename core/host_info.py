@@ -4,14 +4,16 @@ Safely reads host information from inside a Docker container using
 mounted /host files or container fallbacks.
 """
 
+import datetime
 import json
 import os
 import platform
 import socket
 import sqlite3
+import time
 from typing import Any, Dict, Optional
 
-STATUS_VERSION = "v0.2.1"
+STATUS_VERSION = "v0.3.0"
 
 # In-memory state for update checking
 _update_state = {
@@ -255,6 +257,138 @@ def get_tuptime() -> Dict[str, Any]:
             "system_life": "not available",
             "uptime_rate_formatted": "not available",
             "reason": f"error reading tuptime database: {str(e)}",
+        }
+
+
+def get_uptime_history(days: int = 90) -> Dict[str, Any]:
+    """Calculate daily uptime percentages, total uptime seconds, and bad shutdowns over past N days from tuptime.db."""
+    if days < 1:
+        days = 1
+    elif days > 365:
+        days = 365
+
+    db_paths = []
+    custom_db = os.environ.get("TUPTIME_DB")
+    if custom_db:
+        db_paths.append(custom_db)
+    db_paths.extend([
+        "/host/var/lib/tuptime/tuptime.db",
+        "/var/lib/tuptime/tuptime.db",
+        "/host/etc/tuptime/tuptime.db",
+        "/etc/tuptime/tuptime.db",
+    ])
+
+    target_db = None
+    for p in db_paths:
+        if os.path.isfile(p):
+            target_db = p
+            break
+
+    if not target_db:
+        return {
+            "available": False,
+            "days": days,
+            "history": [],
+            "reason": "tuptime database not found (/host/var/lib/tuptime/tuptime.db)",
+        }
+
+    try:
+        try:
+            conn = sqlite3.connect(f"file:{target_db}?mode=ro", uri=True, timeout=2.0)
+        except Exception:
+            conn = sqlite3.connect(target_db, timeout=2.0)
+
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        rows = cur.execute(
+            "SELECT rowid, bootid, btime, uptime, offbtime, endst, downtime FROM tuptime ORDER BY btime ASC"
+        ).fetchall()
+        conn.close()
+
+        if not rows:
+            return {
+                "available": False,
+                "days": days,
+                "history": [],
+                "reason": "tuptime database is empty",
+            }
+
+        now = int(time.time())
+        first_boot_time = rows[0]["btime"]
+
+        boots = []
+        for r in rows:
+            b_start = r["btime"]
+            b_end = r["offbtime"] if r["offbtime"] is not None else now
+            boots.append({
+                "start": b_start,
+                "end": b_end,
+                "endst": r["endst"],
+            })
+
+        today = datetime.date.today()
+        history = []
+        total_tracked_secs = 0
+        total_up_secs = 0
+        total_bad_shutdowns = 0
+
+        for i in range(days - 1, -1, -1):
+            d = today - datetime.timedelta(days=i)
+            d_start = int(datetime.datetime.combine(d, datetime.time.min).timestamp())
+            d_end = now if i == 0 else int(datetime.datetime.combine(d, datetime.time.max).timestamp())
+            day_duration = max(1, d_end - d_start)
+
+            if d_end < first_boot_time:
+                history.append({
+                    "date": str(d),
+                    "weekday": d.weekday(),
+                    "uptime_pct": None,
+                    "uptime_seconds": 0,
+                    "total_seconds": day_duration,
+                    "bad_shutdowns": 0,
+                    "status": "unrecorded",
+                })
+                continue
+
+            day_up = 0
+            bad_shutdowns = 0
+            for b in boots:
+                overlap = max(0, min(b["end"], d_end) - max(b["start"], d_start))
+                day_up += overlap
+                if b["endst"] == 0 and d_start <= b["end"] <= d_end:
+                    bad_shutdowns += 1
+
+            pct = 100.0 if day_up >= (day_duration - 60) else round((day_up / day_duration) * 100.0, 1)
+            total_tracked_secs += day_duration
+            total_up_secs += day_up
+            total_bad_shutdowns += bad_shutdowns
+
+            history.append({
+                "date": str(d),
+                "weekday": d.weekday(),
+                "uptime_pct": min(100.0, pct),
+                "uptime_seconds": day_up,
+                "total_seconds": day_duration,
+                "bad_shutdowns": bad_shutdowns,
+                "status": "online" if pct > 0 else "offline",
+            })
+
+        overall_rate = round((total_up_secs * 100.0) / total_tracked_secs, 2) if total_tracked_secs > 0 else 0.0
+
+        return {
+            "available": True,
+            "days": days,
+            "overall_rate": overall_rate,
+            "overall_rate_formatted": f"{overall_rate:.2f}%",
+            "total_bad_shutdowns": total_bad_shutdowns,
+            "history": history,
+        }
+    except Exception as e:
+        return {
+            "available": False,
+            "days": days,
+            "history": [],
+            "reason": f"error computing uptime history: {str(e)}",
         }
 
 
