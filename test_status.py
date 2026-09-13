@@ -51,9 +51,9 @@ class TestHostInfo(unittest.TestCase):
         for k in ["APPLICATION_VERSION", "APP_VERSION", "STATUS_VERSION", "UPDATER_VERSION"]:
             os.environ.pop(k, None)
         versions = host_info.get_versions()
-        self.assertEqual(versions["status"], "v0.1.0")
+        self.assertEqual(versions["status"], "v0.2.0")
         self.assertEqual(versions["updater"], "v0.1.0")
-        self.assertEqual(versions["application"], "v0.1.0")
+        self.assertEqual(versions["application"], "v0.2.0")
 
 
 if __name__ == "__main__":
