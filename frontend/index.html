@@ -17,7 +17,7 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="style.css?v=0.1.2">
+  <link rel="stylesheet" href="style.css?v=0.1.3">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2240%22 fill=%22%2310b981%22/%3E%3C/svg%3E">
 </head>
 <body>
@@ -45,6 +45,14 @@
         <div class="stat-row">
           <span class="label">Uptime</span>
           <span class="value" id="uptime">--</span>
+        </div>
+        <div class="stat-row" id="row-system-life" style="display: none;">
+          <span class="label">System life</span>
+          <span class="value" id="system-life">--</span>
+        </div>
+        <div class="stat-row" id="row-system-uptime" style="display: none;">
+          <span class="label">System uptime</span>
+          <span class="value" id="system-uptime-rate">--</span>
         </div>
       </div>
 
@@ -84,6 +92,6 @@
       </div>
     </div>
   </div>
-  <script src="app.js?v=0.1.2"></script>
+  <script src="app.js?v=0.1.3"></script>
 </body>
 </html>

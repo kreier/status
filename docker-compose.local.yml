@@ -9,6 +9,7 @@ services:
       - /etc/os-release:/host/etc/os-release:ro
       - /etc/hostname:/host/etc/hostname:ro
       - /proc:/host/proc:ro
+      - /var/lib/tuptime:/host/var/lib/tuptime:ro
       - ./frontend:/app/frontend:ro
       - ./core:/app/core:ro
     environment:

@@ -6,6 +6,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Historical uptime statistics inspection via `tuptime` SQLite database (`/host/var/lib/tuptime/tuptime.db`), displaying system life, startups, shutdowns (ok vs bad), and lifetime uptime rate.
+- Automated cleanup workflow `.github/workflows/cleanup-packages.yml` and CLI script `scripts/cleanup-ghcr-untagged.sh` to safely purge untagged multi-arch image versions from GitHub Container Registry (GHCR).
+- Mount `/var/lib/tuptime:/host/var/lib/tuptime:ro` in `docker-compose.yml` and `docker-compose.local.yml`.
 - Automated update checking in `core/host_info.py` comparing semantic versions against GitHub Releases API (`https://api.github.com/repos/{repo}/releases/latest`).
 - On-demand update trigger integration with Watchtower HTTP API (`WATCHTOWER_URL`) and host update script (`/host/update.sh`).
 - Complete Linux machine update setup guide in `docs/UPDATES.md` covering Watchtower, host scripts, and cron automation.

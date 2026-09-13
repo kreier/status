@@ -4,10 +4,12 @@ Safely reads host information from inside a Docker container using
 mounted /host files or container fallbacks.
 """
 
+import json
 import os
 import platform
 import socket
-from typing import Any, Dict
+import sqlite3
+from typing import Any, Dict, Optional
 
 STATUS_VERSION = "v0.1.0"
 
@@ -139,6 +141,103 @@ def get_uptime() -> Dict[str, Any]:
         "minutes": minutes,
         "seconds": uptime_seconds,
     }
+
+
+def _format_tuptime_duration(seconds: int) -> str:
+    """Format seconds into tuptime-style duration (e.g. 9d 05h 49m 29s)."""
+    if seconds < 0:
+        seconds = 0
+    days, rem = divmod(seconds, 86400)
+    hours, rem = divmod(rem, 3600)
+    minutes, secs = divmod(rem, 60)
+
+    parts = []
+    if days > 0:
+        parts.append(f"{days}d")
+    if hours > 0 or days > 0:
+        parts.append(f"{hours:02d}h" if days > 0 else f"{hours}h")
+    if minutes > 0 or hours > 0 or days > 0:
+        parts.append(f"{minutes:02d}m" if (days > 0 or hours > 0) else f"{minutes}m")
+    parts.append(f"{secs:02d}s" if (days > 0 or hours > 0 or minutes > 0) else f"{secs}s")
+
+    return " ".join(parts)
+
+
+def get_tuptime() -> Dict[str, Any]:
+    """Inspect historical uptime statistics from tuptime SQLite database if available."""
+    db_paths = []
+    custom_db = os.environ.get("TUPTIME_DB")
+    if custom_db:
+        db_paths.append(custom_db)
+    db_paths.extend([
+        "/host/var/lib/tuptime/tuptime.db",
+        "/var/lib/tuptime/tuptime.db",
+        "/host/etc/tuptime/tuptime.db",
+        "/etc/tuptime/tuptime.db",
+    ])
+
+    target_db = None
+    for p in db_paths:
+        if os.path.isfile(p):
+            target_db = p
+            break
+
+    if not target_db:
+        return {"available": False}
+
+    try:
+        try:
+            conn = sqlite3.connect(f"file:{target_db}?mode=ro", uri=True, timeout=2.0)
+        except Exception:
+            conn = sqlite3.connect(target_db, timeout=2.0)
+
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        rows = cur.execute(
+            "SELECT rowid, bootid, btime, uptime, rntime, slptime, offbtime, endst, downtime, kernel "
+            "FROM tuptime ORDER BY rowid ASC"
+        ).fetchall()
+        conn.close()
+
+        if not rows:
+            return {"available": False}
+
+        startups = len(rows)
+        shutdowns_ok = sum(1 for r in rows if r["offbtime"] is not None and r["endst"] == 1)
+        shutdowns_bad = sum(1 for r in rows if r["offbtime"] is not None and r["endst"] == 0)
+
+        curr_uptime_sec = get_uptime().get("seconds", 0)
+
+        last_row = rows[-1]
+        if last_row["offbtime"] is None:
+            # System is currently running on this boot
+            current_boot_up = max(last_row["uptime"] or 0, curr_uptime_sec)
+            total_up = sum(r["uptime"] or 0 for r in rows[:-1]) + current_boot_up
+        else:
+            total_up = sum(r["uptime"] or 0 for r in rows)
+
+        total_down = sum(r["downtime"] or 0 for r in rows if r["downtime"] is not None)
+        system_life = total_up + total_down
+
+        rate = round((total_up * 100.0) / system_life, 2) if system_life > 0 else 0.0
+
+        return {
+            "available": True,
+            "startups": startups,
+            "shutdowns_ok": shutdowns_ok,
+            "shutdowns_bad": shutdowns_bad,
+            "shutdowns_formatted": f"{shutdowns_ok} ok + {shutdowns_bad} bad",
+            "system_life": _format_tuptime_duration(system_life),
+            "system_life_seconds": system_life,
+            "uptime_rate": rate,
+            "uptime_rate_formatted": f"{rate:.2f}%",
+            "total_uptime": _format_tuptime_duration(total_up),
+            "total_uptime_seconds": total_up,
+            "total_downtime": _format_tuptime_duration(total_down),
+            "total_downtime_seconds": total_down,
+        }
+    except Exception:
+        return {"available": False}
 
 
 def get_versions() -> Dict[str, str]:
@@ -331,6 +430,7 @@ def get_all_status() -> Dict[str, Any]:
     kernel = get_kernel()
     arch = get_architecture()
     uptime = get_uptime()
+    tuptime = get_tuptime()
     versions = get_versions()
     update_info = check_updates()
 
@@ -343,6 +443,7 @@ def get_all_status() -> Dict[str, Any]:
             "uptime": uptime["formatted"],
             "uptime_seconds": uptime["seconds"],
         },
+        "tuptime": tuptime,
         "versions": versions,
         "updates": update_info,
     }
