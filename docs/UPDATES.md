@@ -82,6 +82,7 @@ After=docker.service
 [Service]
 Type=oneshot
 WorkingDirectory=/srv/status
+ExecStartPre=/bin/sh -c 'echo "v0.1.0" > /srv/status/trigger/updater_version'
 ExecStartPre=/bin/sleep 2
 ExecStart=/usr/bin/docker compose pull
 ExecStart=/usr/bin/docker compose up -d --remove-orphans

@@ -47,5 +47,14 @@ class TestHostInfo(unittest.TestCase):
         self.assertIn("success", res)
         self.assertTrue(res["success"])
 
+    def test_default_versions_without_env(self):
+        for k in ["APPLICATION_VERSION", "APP_VERSION", "STATUS_VERSION", "UPDATER_VERSION"]:
+            os.environ.pop(k, None)
+        versions = host_info.get_versions()
+        self.assertEqual(versions["status"], "v0.1.0")
+        self.assertEqual(versions["updater"], "v0.1.0")
+        self.assertEqual(versions["application"], "v0.1.0")
+
+
 if __name__ == "__main__":
     unittest.main()

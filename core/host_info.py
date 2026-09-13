@@ -9,7 +9,7 @@ import platform
 import socket
 from typing import Any, Dict
 
-STATUS_VERSION = "v0.2.0"
+STATUS_VERSION = "v0.1.0"
 
 # In-memory state for update checking
 _update_state = {
@@ -142,17 +142,51 @@ def get_uptime() -> Dict[str, Any]:
 
 
 def get_versions() -> Dict[str, str]:
-    """Return component versions (Application, Status, Updater)."""
-    app_ver = os.environ.get("APPLICATION_VERSION") or os.environ.get("APP_VERSION") or "v0.4.2"
-    updater_ver = os.environ.get("UPDATER_VERSION") or "v0.1.1"
-    status_ver = os.environ.get("STATUS_VERSION") or STATUS_VERSION
+    """Return component versions (Application, Status, Updater).
+    Dynamically checks host version files before falling back to defaults.
+    """
+    # 1. Status version: env -> VERSION file -> internal STATUS_VERSION
+    status_ver = os.environ.get("STATUS_VERSION")
+    if not status_ver:
+        for vf in ("/app/VERSION", "VERSION"):
+            v = _read_file_stripped(vf)
+            if v:
+                status_ver = v if v.startswith("v") else f"v{v}"
+                break
+    if not status_ver:
+        status_ver = STATUS_VERSION
 
-    # Also check if version files exist on host
-    app_ver_file = "/host/app/version.txt"
-    if os.path.exists(app_ver_file):
-        custom_ver = _read_file_stripped(app_ver_file)
-        if custom_ver:
-            app_ver = custom_ver
+    # 2. Updater version: env -> trigger dir stamp -> updater dir -> default
+    updater_ver = os.environ.get("UPDATER_VERSION")
+    if not updater_ver:
+        for uf in (
+            "/host/trigger/updater_version",
+            "/host/trigger/version.txt",
+            "/host/updater/version.txt",
+            "/host/updater/VERSION",
+        ):
+            u = _read_file_stripped(uf)
+            if u:
+                updater_ver = u if u.startswith("v") else f"v{u}"
+                break
+    if not updater_ver:
+        updater_ver = "v0.1.0"
+
+    # 3. Application version: env -> host app version file -> defaults to status_ver
+    app_ver = os.environ.get("APPLICATION_VERSION") or os.environ.get("APP_VERSION")
+    if not app_ver:
+        for af in (
+            "/host/app/version.txt",
+            "/host/app/VERSION",
+            "/host/version.txt",
+            "/host/VERSION",
+        ):
+            a = _read_file_stripped(af)
+            if a:
+                app_ver = a if a.startswith("v") else f"v{a}"
+                break
+    if not app_ver:
+        app_ver = status_ver
 
     return {
         "application": app_ver,

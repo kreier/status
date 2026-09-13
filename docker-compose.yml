@@ -21,10 +21,10 @@ services:
       # Optional: integrate with Watchtower updater service below:
       # - WATCHTOWER_URL=http://updater:8080/v1/update
       # - WATCHTOWER_TOKEN=status-secret-token
-      # Optional metadata overrides:
+      # Optional metadata overrides (otherwise dynamically detected from host files):
       # - MACHINE_NAME=RK3229
-      # - APPLICATION_VERSION=v0.4.2
-      # - UPDATER_VERSION=v0.1.1
+      # - APPLICATION_VERSION=v0.1.0  # Or mount - ./app_version.txt:/host/app/version.txt:ro
+      # - UPDATER_VERSION=v0.1.0      # Or automatically stamped by systemd updater
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.status.rule=(Host(`rk3229.hv.io.vn`) || Host(`rk3229`) || Host(`localhost`)) && PathPrefix(`/status`)"
