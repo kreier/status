@@ -14,8 +14,9 @@ function apiUrl(endpoint) {
 
 async function loadStatus() {
   const lastUpdatedEl = document.getElementById("last-updated");
+  const url = apiUrl("status");
   try {
-    const res = await fetch(apiUrl("status"), { cache: "no-store" });
+    const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     render(data);
@@ -23,6 +24,7 @@ async function loadStatus() {
       lastUpdatedEl.textContent = `Updated ${new Date().toLocaleTimeString()}`;
     }
   } catch (err) {
+    console.error(`[status] Failed to fetch ${url}:`, err);
     if (lastUpdatedEl) {
       lastUpdatedEl.textContent = "Offline / Connection error";
     }
@@ -81,8 +83,7 @@ function showFeedback(text, isError = false) {
   }, 4000);
 }
 
-// Button event listeners
-document.addEventListener("DOMContentLoaded", () => {
+function init() {
   const btnCheck = document.getElementById("btn-check");
   const btnUpdate = document.getElementById("btn-update");
 
@@ -132,4 +133,11 @@ document.addEventListener("DOMContentLoaded", () => {
   loadStatus();
   // Poll every 60s
   setInterval(loadStatus, 60000);
-});
+}
+
+// Ensure init() always executes even if DOMContentLoaded already fired
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
