@@ -237,8 +237,22 @@ def check_updates() -> Dict[str, Any]:
 
 
 def trigger_update() -> Dict[str, Any]:
-    """Trigger update process for host components via Watchtower API or host script."""
-    # 1. Check for Watchtower HTTP API
+    """Trigger update process for host components via trigger file, Watchtower API, or host script."""
+    # 1. Check for trigger file mechanism (Method B - Secure decoupled host trigger)
+    trigger_dir = "/host/trigger"
+    if os.path.exists(trigger_dir) and os.path.isdir(trigger_dir):
+        try:
+            trigger_file = os.path.join(trigger_dir, "update")
+            with open(trigger_file, "w") as f:
+                f.write(f"trigger {STATUS_VERSION}")
+            return {
+                "success": True,
+                "message": "Update triggered! Host updater is pulling and recreating container...",
+            }
+        except Exception as e:
+            return {"success": False, "message": f"Could not write trigger: {str(e)}"}
+
+    # 2. Check for Watchtower HTTP API (Method A)
     watchtower_url = os.environ.get("WATCHTOWER_URL")
     if watchtower_url:
         try:
@@ -255,7 +269,7 @@ def trigger_update() -> Dict[str, Any]:
         except Exception as e:
             return {"success": False, "message": f"Watchtower trigger failed: {str(e)}"}
 
-    # 2. Check for host update script
+    # 3. Check for host update script
     update_script = os.environ.get("UPDATE_SCRIPT", "/host/update.sh")
     if os.path.exists(update_script) and os.access(update_script, os.X_OK):
         try:
@@ -269,20 +283,6 @@ def trigger_update() -> Dict[str, Any]:
             }
         except Exception as e:
             return {"success": False, "message": f"Update failed: {str(e)}"}
-
-    # 3. Check for trigger file mechanism
-    trigger_dir = "/host/trigger"
-    if os.path.exists(trigger_dir) and os.path.isdir(trigger_dir):
-        try:
-            trigger_file = os.path.join(trigger_dir, "update")
-            with open(trigger_file, "w") as f:
-                f.write(STATUS_VERSION)
-            return {
-                "success": True,
-                "message": "Host update trigger written to trigger file.",
-            }
-        except Exception as e:
-            return {"success": False, "message": f"Could not write trigger: {str(e)}"}
 
     return {
         "success": True,

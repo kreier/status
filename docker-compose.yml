@@ -11,7 +11,9 @@ services:
       - /etc/os-release:/host/etc/os-release:ro
       - /etc/hostname:/host/etc/hostname:ro
       - /proc:/host/proc:ro
-      # Optional: mount host update script (see docs/UPDATES.md)
+      # Method B (Decoupled host updater): mount trigger folder (see docs/UPDATES.md)
+      # - ./trigger:/host/trigger:rw
+      # Optional: mount host update script
       # - ./update.sh:/host/update.sh:ro
     environment:
       - PORT=8000
