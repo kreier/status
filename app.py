@@ -18,29 +18,21 @@ try:
 
     app = Flask(__name__, static_folder=None)
 
-    @app.route("/")
-    @app.route("/status")
-    @app.route("/status/")
+    @app.route("/", strict_slashes=False)
+    @app.route("/status", strict_slashes=False)
+    @app.route("/status/", strict_slashes=False)
     def index():
         return send_from_directory(FRONTEND_DIR, "index.html")
 
-    @app.route("/<path:filename>")
-    @app.route("/status/<path:filename>")
-    def static_files(filename):
-        # Prevent accessing API routes as static files
-        if filename.startswith("api"):
-            return jsonify({"error": "Not found"}), 404
-        return send_from_directory(FRONTEND_DIR, filename)
-
-    @app.route("/api", methods=["GET"])
-    @app.route("/api/status", methods=["GET"])
-    @app.route("/status/api", methods=["GET"])
-    @app.route("/status/api/status", methods=["GET"])
+    @app.route("/api", methods=["GET"], strict_slashes=False)
+    @app.route("/api/status", methods=["GET"], strict_slashes=False)
+    @app.route("/status/api", methods=["GET"], strict_slashes=False)
+    @app.route("/status/api/status", methods=["GET"], strict_slashes=False)
     def get_status():
         return jsonify(host_info.get_all_status())
 
-    @app.route("/api/check", methods=["POST"])
-    @app.route("/status/api/check", methods=["POST"])
+    @app.route("/api/check", methods=["POST"], strict_slashes=False)
+    @app.route("/status/api/check", methods=["POST"], strict_slashes=False)
     def check_updates():
         res = host_info.check_updates()
         # Return full current status alongside check info
@@ -48,11 +40,22 @@ try:
         data["updates"] = res
         return jsonify(data)
 
-    @app.route("/api/update", methods=["POST"])
-    @app.route("/status/api/update", methods=["POST"])
+    @app.route("/api/update", methods=["POST"], strict_slashes=False)
+    @app.route("/status/api/update", methods=["POST"], strict_slashes=False)
     def trigger_update():
         res = host_info.trigger_update()
         return jsonify(res)
+
+    @app.route("/<path:filename>")
+    @app.route("/status/<path:filename>")
+    def static_files(filename):
+        # If the requested filename is empty, "status", or "index.html", serve index.html
+        if filename in ("", "status", "index.html"):
+            return send_from_directory(FRONTEND_DIR, "index.html")
+        # Prevent accessing API routes as static files
+        if filename.startswith("api"):
+            return jsonify({"error": "Not found"}), 404
+        return send_from_directory(FRONTEND_DIR, filename)
 
     def run():
         port = int(os.environ.get("PORT", 8000))
