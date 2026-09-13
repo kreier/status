@@ -6,6 +6,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Automated update checking in `core/host_info.py` comparing semantic versions against GitHub Releases API (`https://api.github.com/repos/{repo}/releases/latest`).
+- On-demand update trigger integration with Watchtower HTTP API (`WATCHTOWER_URL`) and host update script (`/host/update.sh`).
+- Complete Linux machine update setup guide in `docs/UPDATES.md` covering Watchtower, host scripts, and cron automation.
+- Watchtower updater service profile and check repository configuration in `docker-compose.yml`.
+
+### Fixed
+- Fixed missing `frontend/` directory in Docker image by removing `frontend/` exclusion from `.dockerignore`.
+- Fixed `/status` and `/status/` 404 routing by setting `strict_slashes=False` and ensuring index fallback.
+- Added cache-busting headers (`Cache-Control: no-cache, no-store, must-revalidate`) and asset version query strings (`?v=...`) to prevent stale browser caching.
+- Fixed `app.js` initialization race condition by checking `document.readyState` so `loadStatus()` always executes under HTTP/2.
+- Removed `psutil` dependency from `requirements.txt` and `pi_stats.py` to ensure fast, pure-Python builds on 32-bit ARM (`armhf`).
+
+## [0.1.0] - 2026-09-13
+
+### Added
 - Host inspection engine (`core/host_info.py`) detecting machine name, OS distro, kernel release, architecture (`armhf`, `arm64`, `amd64`), host uptime, component versions (`Application`, `Status`, `Updater`), and update status.
 - Unified web server & API (`app.py`) supporting direct local access (`/status`) and reverse proxy subpath routing (`/status/api`).
 - Monospace/terminal styled responsive status dashboard card in `frontend/` matching single-host status requirements with interactive `[Check]` and `[Update]` buttons.
@@ -13,35 +28,4 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Streamlined `docker-compose.yml` configured for GHCR image deployment with host volume mounts and Traefik router/service labels.
 - `docker-compose.local.yml` for local container building and development.
 - Unit test suites `test_status.py` and `test_app.py`.
-
-- Added missing `__init__.py` files in `core/` and `sources/<category>/` so dotted
-  package imports in scheduler.py resolve.
-- Fixed docker-compose.yml `build:` path (was `./collectors`, which doesn't exist) to
-  point at the repo root where the Dockerfile lives.
-- Moved frontend files (`index.html`, `app.js`, `style.css`) into a `frontend/`
-  directory so the `./frontend:/srv:ro` volume mount resolves.
-- Added `.dockerignore` to keep the collectors image lean (frontend, docs, git, secrets).
-- Removed dead `common.py` (duplicate of `core/` helpers).
-- Updated AGENTS.md, README.md, TODO.md and ARCHITECTURE.md to reflect the actual repo
-  layout (`core/`, `sources/`, `scheduler.py`, `frontend/` at the root, not under
-  `collectors/`).
-
-### Changed
-- Reorganized collectors/ from a flat file list into core/ (shared config, hash-guard,
-  status.json writer) and sources/<category>/ (one collector per file, grouped by
-  category: system, network, home, github)
-- scheduler.py updated to import collectors from their new module paths
-
-### Added
-- Initial repo scaffold: README, AGENTS.md, TODO.md, this changelog
-- ARCHITECTURE.md, HARDWARE.md, SCHEMA.md
-- config.example.yaml
-- Docker Compose setup: `collectors` + `web` (Caddy) + `cloudflared` services
-- `core/`: config loading, hash-guard pattern, status.json writer, history log
-- `scheduler.py`: per-collector interval scheduling
-- Collectors: `pi_stats.py` and `github_repos.py` (fully implemented),
-  `speedtest_collector.py` (implemented, logs history for future heatmap),
-  `room_temp.py`, `ac_state.py`, `nas_images.py` (stubs pending hardware decisions)
-- `frontend/`: static page (index.html, style.css, app.js) rendering status.json as cards,
-  polling every 60s, dark-mode aware
-- `.env.example` for Cloudflare Tunnel token and GitHub credentials
+- Shared core infrastructure: config loading, hash-guard pattern, and status history.

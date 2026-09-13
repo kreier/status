@@ -11,29 +11,43 @@ services:
       - /etc/os-release:/host/etc/os-release:ro
       - /etc/hostname:/host/etc/hostname:ro
       - /proc:/host/proc:ro
-      # Optional: mount custom config or version file
-      # - ./config.yaml:/app/config.yaml:ro
+      # Optional: mount host update script (see docs/UPDATES.md)
+      # - ./update.sh:/host/update.sh:ro
     environment:
-      # Optional overrides:
+      - PORT=8000
+      - CHECK_REPO=kreier/status
+      # Optional: integrate with Watchtower updater service below:
+      # - WATCHTOWER_URL=http://updater:8080/v1/update
+      # - WATCHTOWER_TOKEN=status-secret-token
+      # Optional metadata overrides:
       # - MACHINE_NAME=RK3229
       # - APPLICATION_VERSION=v0.4.2
       # - UPDATER_VERSION=v0.1.1
-      - PORT=8000
     labels:
-      # Traefik reverse proxy configuration:
       - "traefik.enable=true"
-      # Match both remote hostname and local network routes
-      - "traefik.http.routers.status.rule=Host(`rk3229.hv.io.vn`) && PathPrefix(`/status`)"
-      - "traefik.http.routers.status.entrypoints=websecure"
+      - "traefik.http.routers.status.rule=(Host(`rk3229.hv.io.vn`) || Host(`rk3229`) || Host(`localhost`)) && PathPrefix(`/status`)"
+      - "traefik.http.routers.status.entrypoints=web,websecure"
       - "traefik.http.routers.status.tls=true"
-      - "traefik.http.routers.status.tls.certresolver=letsencrypt"
       - "traefik.http.services.status.loadbalancer.server.port=8000"
+      - "com.centurylinklabs.watchtower.enable=true"
     networks:
       - default
-      # Uncomment if using an external Traefik proxy network:
-      # - traefik-net
+
+  # Optional Watchtower updater service (see docs/UPDATES.md)
+  # updater:
+  #   image: containrrr/watchtower
+  #   container_name: status-updater
+  #   restart: unless-stopped
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   environment:
+  #     - WATCHTOWER_CLEANUP=true
+  #     - WATCHTOWER_LABEL_ENABLE=true
+  #     - WATCHTOWER_HTTP_API_UPDATE=true
+  #     - WATCHTOWER_HTTP_API_TOKEN=status-secret-token
+  #     - WATCHTOWER_POLL_INTERVAL=86400
+  #   labels:
+  #     - "traefik.enable=false"
 
 networks:
   default:
-  # traefik-net:
-  #   external: true

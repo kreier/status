@@ -161,27 +161,101 @@ def get_versions() -> Dict[str, str]:
     }
 
 
+def _parse_semver(ver: str) -> tuple:
+    """Parse version string into integer tuple for comparison."""
+    try:
+        cleaned = ver.strip().lstrip("v").split("-")[0].split("+")[0]
+        parts = [int(p) for p in cleaned.split(".") if p.isdigit()]
+        return tuple(parts) if parts else (0, 0, 0)
+    except Exception:
+        return (0, 0, 0)
+
+
 def check_updates() -> Dict[str, Any]:
-    """Check for available updates."""
-    # Check if forced via env var
+    """Check for available updates against GitHub Releases API or env override."""
     env_update = os.environ.get("UPDATES_AVAILABLE")
     if env_update is not None:
         avail = env_update.strip().lower() in ("true", "1", "yes", "y")
-    else:
-        avail = _update_state.get("available", True)
+        return {
+            "available": avail,
+            "status_text": "YES" if avail else "NO",
+            "message": "Updates available (forced)" if avail else "Up to date (forced)",
+            "latest_version": None,
+        }
+
+    repo = os.environ.get("CHECK_REPO", "kreier/status").strip()
+    status_ver = os.environ.get("STATUS_VERSION", STATUS_VERSION)
+    latest_ver = None
+    avail = False
+    message = "All components up to date"
+
+    try:
+        import urllib.request
+        url = f"https://api.github.com/repos/{repo}/releases/latest"
+        req = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "status-monitor/0.1.0",
+                "Accept": "application/vnd.github.v3+json",
+            }
+        )
+        with urllib.request.urlopen(req, timeout=4) as resp:
+            if resp.status == 200:
+                data = json.loads(resp.read().decode("utf-8"))
+                latest_ver = data.get("tag_name", "").strip()
+                if latest_ver:
+                    curr_tuple = _parse_semver(status_ver)
+                    latest_tuple = _parse_semver(latest_ver)
+                    if latest_tuple > curr_tuple:
+                        avail = True
+                        message = f"New version available: {latest_ver}"
+                    else:
+                        avail = False
+                        message = f"Up to date ({status_ver})"
+    except Exception as e:
+        # Fallback to cached state or report offline check
+        if _update_state.get("checked"):
+            return {
+                "available": _update_state.get("available", False),
+                "status_text": "YES" if _update_state.get("available", False) else "NO",
+                "message": _update_state.get("message", "Up to date"),
+                "latest_version": _update_state.get("latest_version"),
+            }
+        message = "Could not check remote version"
 
     _update_state["checked"] = True
     _update_state["available"] = avail
+    _update_state["latest_version"] = latest_ver
+    _update_state["message"] = message
 
     return {
         "available": avail,
         "status_text": "YES" if avail else "NO",
-        "message": "Updates available" if avail else "All components up to date",
+        "latest_version": latest_ver,
+        "message": message,
     }
 
 
 def trigger_update() -> Dict[str, Any]:
-    """Trigger update process for host components."""
+    """Trigger update process for host components via Watchtower API or host script."""
+    # 1. Check for Watchtower HTTP API
+    watchtower_url = os.environ.get("WATCHTOWER_URL")
+    if watchtower_url:
+        try:
+            import urllib.request
+            token = os.environ.get("WATCHTOWER_TOKEN", "")
+            headers = {"Authorization": f"Bearer {token}"} if token else {}
+            req = urllib.request.Request(watchtower_url, headers=headers, method="POST")
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                if resp.status in (200, 204):
+                    return {
+                        "success": True,
+                        "message": "Watchtower update triggered successfully.",
+                    }
+        except Exception as e:
+            return {"success": False, "message": f"Watchtower trigger failed: {str(e)}"}
+
+    # 2. Check for host update script
     update_script = os.environ.get("UPDATE_SCRIPT", "/host/update.sh")
     if os.path.exists(update_script) and os.access(update_script, os.X_OK):
         try:
@@ -196,9 +270,23 @@ def trigger_update() -> Dict[str, Any]:
         except Exception as e:
             return {"success": False, "message": f"Update failed: {str(e)}"}
 
+    # 3. Check for trigger file mechanism
+    trigger_dir = "/host/trigger"
+    if os.path.exists(trigger_dir) and os.path.isdir(trigger_dir):
+        try:
+            trigger_file = os.path.join(trigger_dir, "update")
+            with open(trigger_file, "w") as f:
+                f.write(STATUS_VERSION)
+            return {
+                "success": True,
+                "message": "Host update trigger written to trigger file.",
+            }
+        except Exception as e:
+            return {"success": False, "message": f"Could not write trigger: {str(e)}"}
+
     return {
         "success": True,
-        "message": "Update triggered successfully (mock updater).",
+        "message": "Update triggered (simulate: no updater script or Watchtower configured).",
     }
 
 

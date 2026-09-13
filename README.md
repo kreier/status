@@ -80,8 +80,17 @@ Images are automatically built and published via GitHub Actions to `ghcr.io/krei
 ## API Endpoints
 
 - `GET /status/api` or `GET /status/api/status`: Returns JSON status object.
-- `POST /status/api/check`: Triggers update check.
-- `POST /status/api/update`: Triggers update execution.
+- `POST /status/api/check`: Checks for updates against GitHub Releases.
+- `POST /status/api/update`: Triggers update execution via Watchtower or host script.
+
+## Update Mechanism & Setup
+
+The service provides automated update checking and one-click container updating:
+- Clicking **`[Check]`** compares semantic versions against GitHub Releases (`CHECK_REPO=kreier/status`).
+- Clicking **`[Update]`** triggers automated container replacement via Watchtower or a host update script.
+
+See [docs/UPDATES.md](docs/UPDATES.md) for full instructions on setting up Watchtower or host update scripts on your Linux machines.
+
 
 ## License
 

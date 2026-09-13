@@ -1,67 +1,39 @@
 # AGENTS.md
 
-Instructions for AI coding agents (Claude Code, Cursor, Copilot, etc.) working in this repo.
+Instructions for AI coding agents (Claude Code, Cursor, Copilot, Antigravity, etc.) working in this repo.
 Read this before making changes. If something here conflicts with what a human asks for in
 the moment, the human's instruction wins - but flag the conflict.
 
 ## What this project is
 
-A status page at hv.io.vn/status, fed by collector scripts running in Docker on a Raspberry
-Pi 4 on a home network, published via Cloudflare Tunnel. Full design context: README.md,
-docs/ARCHITECTURE.md, docs/SCHEMA.md.
+A self-hosted host status dashboard and service distributed as a multi-architecture Docker container via GitHub Container Registry (`ghcr.io/kreier/status`). It inspects the host machine it runs on (e.g. Rockchip RK3229 running Armbian, Raspberry Pi 4, x86 servers) and presents a clean status dashboard both locally (e.g. `http://<host>/status`) and behind reverse proxies like Traefik (`https://<host>.hv.io.vn/status/`), with an extensible `/status/api` endpoint and integrated update checking/triggering.
+
+Full design context: `README.md`, `docs/ARCHITECTURE.md`, `docs/SCHEMA.md`, `docs/UPDATES.md`.
 
 ## Core design principles - don't violate these
 
-1. **Collectors are independent and modular.** One module per data source, grouped by
-   category under `sources/<category>/` (system, network, home, github, ...). A
-   collector must never import another collector. Shared logic lives in `core/`
-   (`config.py`, `state.py`, `status.py`), not copy-pasted.
-2. **Cheap check before expensive work.** Any collector whose source rarely changes (GitHub
-   repos, NAS image count) must hash a cheap fingerprint of the source first via
-   `core.state.run_if_changed()` and only do the expensive fetch/process when the hash
-   differs.
-3. **Config is data, not code.** Repo categories, display names, collector intervals, and
-   similar settings belong in config.yaml (git-ignored; config.example.yaml is the tracked
-   template), never hardcoded in a collector.
-4. **No secrets in this repo, ever.** No API tokens, no TUNNEL_TOKEN, no real .env, no real
-   config.yaml, no NAS credentials. `.env.example` and `config.example.yaml` are the tracked
-   templates - if a task seems to require committing a secret, stop and ask instead.
-5. **Every collector output follows the shared schema** in docs/SCHEMA.md (id, category,
-   label, value, status). Don't invent a new shape per collector.
-6. **Respect the update cadence per source** (see docs/ARCHITECTURE.md) - don't "simplify"
-   by running everything on one loop interval. Speedtest is expensive and slow; GitHub/NAS
-   checks should be near-free when nothing changed.
-7. **State lives in the `status-data` Docker volume, not in the image.** `docker compose up
-   -d --build` rebuilds the image but never touches the volume - that's what makes state
-   (status.json, hashes, speedtest history) survive redeploys. Only `docker compose down -v`
-   deletes it. Never add volume contents to the image via COPY.
+1. **Lightweight & Multi-Architecture.** The container runs on low-power devices including 32-bit ARM (`linux/arm/v7` for RK3229), 64-bit ARM (`linux/arm64`), and x86_64 (`linux/amd64`). Keep dependencies pure Python where possible — avoid C-extensions that require heavy compilers on ARM.
+2. **Safe Host Inspection.** The container inspects the host using standard read-only mounts (`/etc/os-release`, `/etc/hostname`, `/proc`) rather than requiring privileged root container access.
+3. **Dual Routing & Subpath Resilience.** The service must always function at both `/` and `/status` (and `/status/`), and API endpoints at both `/api` and `/status/api`. Frontend assets must use relative paths or dynamic base path resolution (`getBaseUrl()`) so Traefik prefix-matching never breaks UI or API calls.
+4. **No Cached 404s or Stale UI.** Always ensure `@app.after_request` provides cache-busting headers (`Cache-Control: no-cache, no-store, must-revalidate`) and asset references in `index.html` include query versioning (`style.css?v=...`, `app.js?v=...`).
+5. **No secrets in this repo, ever.** No API tokens, no credentials, no real `.env` or `config.yaml`.
+6. **Package frontend files in Docker image.** `.dockerignore` must NEVER exclude `frontend/` — the standalone container needs `frontend/index.html`, `style.css`, and `app.js` packaged inside.
 
 ## Repo layout
 
-- `core/` - shared infrastructure (config loading, hash-guard, status.json
-  writer). Not a data source itself.
-- `sources/<category>/<name>.py` - one collector per file, exposing a `collect()`
-  function that returns its entries and also calls `core.status.write_entries()` itself.
-- `scheduler.py` - entry point; maps collector name -> module path, runs each on
-  its configured interval.
-- `frontend/` - plain HTML/JS/CSS, no build step, served by Caddy. Fetches
-  `data/status.json` client-side.
-- `docs/` - GitHub Pages source (documentation about the project, built via mkdocs). Fully
-  decoupled from what runs on the Pi - editing docs never requires touching deploy code.
-- Root-level `docker-compose.yml`, `Caddyfile`, `.env.example`, `config.example.yaml` -
-  what actually runs on the Pi. Keep these at root; a Pi `git pull` should never need a
-  path change here.
-
-## Adding a new collector
-
-1. Pick (or create) a category folder under `sources/`.
-2. Write `<name>.py` with a `collect()` function using `core.config`, `core.state`,
-   `core.status` as needed.
-3. Register it in `COLLECTOR_MODULES` in `scheduler.py`.
-4. Add its interval under `collectors:` in `config.example.yaml`.
+- `app.py` — Flask / WSGI web application serving dashboard and `/status/api`.
+- `core/host_info.py` — Host metric extraction (distro, kernel, architecture, uptime), version tracking, GitHub release check, and updater triggering.
+- `core/` — shared infrastructure (`config.py`, `state.py`, `status.py`, `host_info.py`).
+- `frontend/` — static dashboard (`index.html`, `style.css`, `app.js`).
+- `sources/` — optional modular collectors (`pi_stats.py`, etc.).
+- `scheduler.py` — optional periodic background collector runner.
+- `docker-compose.yml` — production compose file deploying `ghcr.io/kreier/status:latest` with host mounts and Traefik labels.
+- `docker-compose.local.yml` — local development compose (`build: .`).
+- `.github/workflows/docker.yml` — automated multi-arch image builder pushing to GHCR.
+- `docs/` — documentation published via MkDocs (`ARCHITECTURE.md`, `SCHEMA.md`, `UPDATES.md`).
 
 ## When you finish a task
 
-- Update TODO.md: check off what's done, add anything new that surfaced.
-- Add an entry under `Unreleased` in CHANGELOG.md.
-- If you changed the shape of status.json or added a new collector, update docs/SCHEMA.md.
+- Update `TODO.md`: check off what's done, add anything new that surfaced.
+- Add an entry under `Unreleased` in `CHANGELOG.md`.
+- If you changed the shape of API endpoints or status data, update `docs/SCHEMA.md`.

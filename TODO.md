@@ -14,9 +14,11 @@ Rough phases, roughly in order. Not all details are decided - pick the next unch
 - [x] Status card UI with interactive Check and Update actions
 - [x] Multi-architecture Docker image publishing (`ghcr.io/kreier/status` with `armhf`/`arm64`/`amd64`)
 - [x] Standard `docker-compose.yml` supporting host mounts, local direct access, and Traefik reverse proxy
+- [x] Deploy to RK3229 and Pi 4 with Docker Compose and Traefik
+- [x] Automated update checking against GitHub Releases
+- [x] On-demand container updater integration (Watchtower / host script)
 - [ ] Create Cloudflare Tunnel (Docker connector) in the Zero Trust dashboard, get token
 - [ ] Add public hostname route: hv.io.vn -> /status* -> http://web:80
-- [ ] Deploy to RK3229 with `docker compose up -d`
 
 - [ ] (Optional) Cloudflare Access application in front of a future settings UI, GitHub OAuth
       restricted to own username
