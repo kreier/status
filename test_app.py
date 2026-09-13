@@ -18,6 +18,18 @@ class TestApp(unittest.TestCase):
         self.assertIn("system", status)
         self.assertIn("versions", status)
         self.assertIn("updates", status)
+        self.assertIn("tuptime", status)
+
+    def test_tuptime_handling(self):
+        # Test tuptime function return shape
+        tup = app.host_info.get_tuptime()
+        self.assertIsInstance(tup, dict)
+        self.assertIn("available", tup)
+        if tup["available"]:
+            self.assertIn("startups", tup)
+            self.assertIn("shutdowns_ok", tup)
+            self.assertIn("system_life", tup)
+            self.assertIn("uptime_rate", tup)
 
     def test_flask_routes_if_available(self):
         if app.app is not None:

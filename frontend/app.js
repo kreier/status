@@ -46,6 +46,31 @@ function render(data) {
     setText("uptime", data.system.uptime || "--");
   }
 
+  // Handle tuptime stats if available
+  const rowLife = document.getElementById("row-system-life");
+  const rowUptime = document.getElementById("row-system-uptime");
+  if (data.tuptime && data.tuptime.available) {
+    if (rowLife) {
+      rowLife.style.display = "flex";
+      setText("system-life", `${data.tuptime.system_life} (${data.tuptime.startups} starts)`);
+      const valLife = document.getElementById("system-life");
+      if (valLife) {
+        valLife.title = `Startups: ${data.tuptime.startups}, Shutdowns: ${data.tuptime.shutdowns_formatted}`;
+      }
+    }
+    if (rowUptime) {
+      rowUptime.style.display = "flex";
+      setText("system-uptime-rate", `${data.tuptime.uptime_rate_formatted}`);
+      const valUptime = document.getElementById("system-uptime-rate");
+      if (valUptime) {
+        valUptime.title = `Total up: ${data.tuptime.total_uptime}, Total down: ${data.tuptime.total_downtime}`;
+      }
+    }
+  } else {
+    if (rowLife) rowLife.style.display = "none";
+    if (rowUptime) rowUptime.style.display = "none";
+  }
+
   if (data.versions) {
     setText("app-version", data.versions.application || "--");
     setText("status-version", data.versions.status || "--");

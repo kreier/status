@@ -10,6 +10,7 @@ Rough phases, roughly in order. Not all details are decided - pick the next unch
 
 ## Phase 1 - infrastructure & host status container
 - [x] Host inspection utility (`core/host_info.py`)
+- [x] Host `tuptime` historical uptime inspection (startups, shutdowns, life, % uptime)
 - [x] Web server and extensible API (`app.py`, `/status/api`)
 - [x] Status card UI with interactive Check and Update actions
 - [x] Multi-architecture Docker image publishing (`ghcr.io/kreier/status` with `armhf`/`arm64`/`amd64`)
@@ -17,6 +18,7 @@ Rough phases, roughly in order. Not all details are decided - pick the next unch
 - [x] Deploy to RK3229 and Pi 4 with Docker Compose and Traefik
 - [x] Automated update checking against GitHub Releases
 - [x] On-demand container updater integration (Watchtower / host script)
+- [x] Automated and CLI-based GHCR untagged package cleanup
 - [ ] Create Cloudflare Tunnel (Docker connector) in the Zero Trust dashboard, get token
 - [ ] Add public hostname route: hv.io.vn -> /status* -> http://web:80
 

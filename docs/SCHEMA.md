@@ -84,10 +84,25 @@ The host status container exposes its system inspection and version metrics as J
     "uptime": "14 days",
     "uptime_seconds": 1209600
   },
+  "tuptime": {
+    "available": true,
+    "startups": 9,
+    "shutdowns_ok": 6,
+    "shutdowns_bad": 2,
+    "shutdowns_formatted": "6 ok + 2 bad",
+    "system_life": "9d 05h 49m 29s",
+    "system_life_seconds": 798598,
+    "uptime_rate": 75.97,
+    "uptime_rate_formatted": "75.97%",
+    "total_uptime": "7d 00h 30m 29s",
+    "total_uptime_seconds": 606658,
+    "total_downtime": "2d 05h 19m 00s",
+    "total_downtime_seconds": 191940
+  },
   "versions": {
     "application": "v0.4.2",
-    "status": "v0.2.0",
-    "updater": "v0.1.1"
+    "status": "v0.1.0",
+    "updater": "v0.1.0"
   },
   "updates": {
     "available": true,

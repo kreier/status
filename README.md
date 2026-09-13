@@ -14,6 +14,8 @@ System       Armbian
 Kernel       6.18.x
 Architecture armhf
 Uptime       14 days
+System life  9d 05h 49m (9 starts)
+System uptime 75.96%
 
 Application  v0.1.0
 Status       v0.1.0
@@ -26,6 +28,7 @@ Updates available: YES
 ```
 
 - **Host Metrics**: Host system OS (e.g. Armbian, Debian, Ubuntu), Linux kernel, architecture (`armhf`, `arm64`, `amd64`), and uptime.
+- **Tuptime Statistics**: When `tuptime` is installed on the host and mounted, displays historical system life, startups, shutdowns (ok vs bad), and lifetime uptime percentage.
 - **Component Versions**: Version tracking for host applications, status service, and updater.
 - **Actions & API**: Interactive `[Check]` and `[Update]` buttons powered by an extensible `/status/api` REST endpoint.
 - **Dual Routing**: Functions seamlessly at direct local URLs (`http://<host>/status`) and behind reverse proxies like Traefik (`https://<host>.hv.io.vn/status/`).
@@ -47,6 +50,8 @@ services:
       - /etc/os-release:/host/etc/os-release:ro
       - /etc/hostname:/host/etc/hostname:ro
       - /proc:/host/proc:ro
+      # Optional: mount tuptime database if tuptime is installed
+      - /var/lib/tuptime:/host/var/lib/tuptime:ro
       # Optional: mount trigger directory for one-click updates (Method B)
       # - ./trigger:/host/trigger:rw
     environment:
@@ -94,6 +99,18 @@ The service provides automated update checking and one-click container updating:
 
 See [docs/UPDATES.md](docs/UPDATES.md) for full instructions on setting up Watchtower or host update scripts on your Linux machines.
 
+## GHCR Package Maintenance & Cleanup
+
+Because multi-architecture Docker images push individual architecture manifests by digest, untagged images can accumulate over time in GitHub Container Registry.
+
+- **Automated Workflow**: An automated cleanup action [`.github/workflows/cleanup-packages.yml`](.github/workflows/cleanup-packages.yml) runs weekly and can be triggered on demand via GitHub Actions (**Actions > Cleanup Untagged GHCR Images > Run workflow**).
+- **Manual CLI Cleanup**: Run the cleanup script locally with GitHub CLI:
+  ```bash
+  # Ensure scopes 'delete:packages' and 'read:packages' are authorized:
+  gh auth refresh -s delete:packages,read:packages
+  # Execute cleanup:
+  ./scripts/cleanup-ghcr-untagged.sh kreier status
+  ```
 
 ## License
 

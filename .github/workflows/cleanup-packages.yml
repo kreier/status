@@ -1,0 +1,29 @@
+name: Cleanup Untagged GHCR Images
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 0' # Every Sunday at 03:00 UTC
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Delete untagged container image versions (batch 1)
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: 'status'
+          package-type: 'container'
+          min-versions-to-keep: 0
+          delete-only-untagged-versions: 'true'
+
+      - name: Delete untagged container image versions (batch 2)
+        uses: actions/delete-package-versions@v5
+        continue-on-error: true
+        with:
+          package-name: 'status'
+          package-type: 'container'
+          min-versions-to-keep: 0
+          delete-only-untagged-versions: 'true'

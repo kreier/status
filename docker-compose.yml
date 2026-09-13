@@ -11,6 +11,8 @@ services:
       - /etc/os-release:/host/etc/os-release:ro
       - /etc/hostname:/host/etc/hostname:ro
       - /proc:/host/proc:ro
+      # Optional: mount host tuptime database if tuptime is installed on the host
+      - /var/lib/tuptime:/host/var/lib/tuptime:ro
       # Method B (Decoupled host updater): mount trigger folder (see docs/UPDATES.md)
       # - ./trigger:/host/trigger:rw
       # Optional: mount host update script
