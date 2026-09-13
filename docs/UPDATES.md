@@ -57,7 +57,7 @@ Ensure `./trigger:/host/trigger:rw` is mounted into the `status` container:
 ```yaml
 services:
   status:
-    image: ghcr.io/kreier/status:0.1.0
+    image: ghcr.io/kreier/status:latest
     container_name: status
     restart: unless-stopped
     volumes:
