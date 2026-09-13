@@ -5,8 +5,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-14
+
+### Added
+- **Interactive Tab Navigation**: Added top-level tab bar switching between **Overview** (classic minimal card), **Availability Grid** (GitHub-style 52-week annual heatmap), and **90-Day Timeline** (continuous daily operational bars).
+- **Tuptime Daily Historical Analysis**: Real-time interval intersection engine in `core/host_info.py` (`get_uptime_history(days)`) calculating precise daily uptime percentages, bad stops, and continuous availability from SQLite database (`/var/lib/tuptime/tuptime.db`).
+- **REST API Endpoint**: Added `GET /api/history` and `GET /status/api/history` accepting optional `?days=N` (default 90, max 365).
+- **Pure CSS/SVG-Free Visualizations**: Zero external JavaScript chart libraries used, maintaining ultra-lightweight footprint (<15 MB container) and native responsiveness. Smooth container width expansion (`440px` to `620px`) when switching to history views.
+- **Client-Side In-Memory Cache**: Cached history responses in `frontend/app.js` to avoid repeated queries when toggling tabs.
+
 ### Documentation
 - Updated `docs/UPDATES.md` and `README.md` with complete architecture diagram and setup guide recommending `/srv/status` (or `/src/status`) for the decoupled host updater.
+- Documented `/status/api/history` response structure and parameter schema in `docs/SCHEMA.md`.
 
 ## [0.2.1] - 2026-09-14
 

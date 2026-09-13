@@ -50,6 +50,6 @@ Rough phases, roughly in order. Not all details are decided - pick the next unch
 - [ ] Repo category assignment UI (dropdown per repo)
 
 ## Ideas / not committed yet
-- [ ] Historical uptime graph, not just current value
+- [x] Historical uptime graph, not just current value (52-week heatmap & 90-day timeline in v0.3.0)
 - [ ] Alerting (e.g. push notification if A/C left on + nobody home)
 - [ ] Dark mode for the status page (frontend already follows prefers-color-scheme)

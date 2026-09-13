@@ -31,6 +31,15 @@ try:
     def get_status():
         return jsonify(host_info.get_all_status())
 
+    @app.route("/api/history", methods=["GET"], strict_slashes=False)
+    @app.route("/status/api/history", methods=["GET"], strict_slashes=False)
+    def get_history():
+        try:
+            days = int(request.args.get("days", 90))
+        except (ValueError, TypeError):
+            days = 90
+        return jsonify(host_info.get_uptime_history(days=days))
+
     @app.route("/api/check", methods=["POST"], strict_slashes=False)
     @app.route("/status/api/check", methods=["POST"], strict_slashes=False)
     def check_updates():
@@ -96,6 +105,14 @@ except ImportError:
                 return super().do_GET()
             elif path in ("/api", "/api/status", "/status/api", "/status/api/status"):
                 self._send_json(host_info.get_all_status())
+                return
+            elif path in ("/api/history", "/status/api/history"):
+                days = 90
+                from urllib.parse import parse_qs
+                qs = parse_qs(parsed.query)
+                if "days" in qs and qs["days"][0].isdigit():
+                    days = int(qs["days"][0])
+                self._send_json(host_info.get_uptime_history(days=days))
                 return
             elif path.startswith("/status/"):
                 # Strip /status prefix for static assets

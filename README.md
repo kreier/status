@@ -28,7 +28,11 @@ Updates available: YES
 ```
 
 - **Host Metrics**: Host system OS (e.g. Armbian, Debian, Ubuntu), Linux kernel, architecture (`armhf`, `arm64`, `amd64`), and uptime.
-- **Tuptime Statistics**: When `tuptime` is installed on the host and mounted, displays historical system life, startups, shutdowns (ok vs bad), and lifetime uptime percentage.
+- **Tuptime Statistics & Historical Analysis**: When `tuptime` is installed on the host and mounted, displays historical system life, startups, shutdowns (ok vs bad), and lifetime uptime percentage.
+- **Tabbed Views**:
+  - **Overview**: Clean, minimal monospace card for quick status inspection.
+  - **Availability Grid**: GitHub-style 52-week annual heatmap showing daily availability, uptime hours, and incident stops with interactive hover tooltips.
+  - **90-Day Timeline**: Continuous 90-day availability bar visualization (UptimeRobot-style) highlighting downtime and unexpected power-offs.
 - **Component Versions**: Version tracking for host applications, status service, and updater.
 - **Actions & API**: Interactive `[Check]` and `[Update]` buttons powered by an extensible `/status/api` REST endpoint.
 - **Dual Routing**: Functions seamlessly at direct local URLs (`http://<host>/status`) and behind reverse proxies like Traefik (`https://<host>.hv.io.vn/status/`).
@@ -95,6 +99,7 @@ Images are packaged as lightweight multi-architecture containers (~11–15 MB co
 ## API Endpoints
 
 - `GET /status/api` or `GET /status/api/status`: Returns JSON status object.
+- `GET /status/api/history?days=90`: Returns daily uptime percentage and bad shutdown timeline (past 1 to 365 days).
 - `POST /status/api/check`: Checks for updates against GitHub Releases.
 - `POST /status/api/update`: Triggers update execution via Watchtower or host script.
 
