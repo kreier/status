@@ -5,7 +5,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-### Fixed
+### Added
+- Host inspection engine (`core/host_info.py`) detecting machine name, OS distro, kernel release, architecture (`armhf`, `arm64`, `amd64`), host uptime, component versions (`Application`, `Status`, `Updater`), and update status.
+- Unified web server & API (`app.py`) supporting direct local access (`/status`) and reverse proxy subpath routing (`/status/api`).
+- Monospace/terminal styled responsive status dashboard card in `frontend/` matching single-host status requirements with interactive `[Check]` and `[Update]` buttons.
+- Multi-architecture Docker publishing GitHub Actions workflow (`.github/workflows/docker.yml`) for `linux/arm/v7` (32-bit ARM for RK3229), `linux/arm64`, and `linux/amd64` to `ghcr.io/kreier/status`.
+- Streamlined `docker-compose.yml` configured for GHCR image deployment with host volume mounts and Traefik router/service labels.
+- `docker-compose.local.yml` for local container building and development.
+- Unit test suites `test_status.py` and `test_app.py`.
+
 - Added missing `__init__.py` files in `core/` and `sources/<category>/` so dotted
   package imports in scheduler.py resolve.
 - Fixed docker-compose.yml `build:` path (was `./collectors`, which doesn't exist) to

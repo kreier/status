@@ -69,3 +69,36 @@ reimplement it.
 `config.yaml` (git-ignored) holds settings that change independently of code — repo
 categories, display names, collector intervals. See `config/config.example.yaml` for the
 tracked template.
+
+## Host Status API (`/status/api` or `/status/api/status`)
+
+The host status container exposes its system inspection and version metrics as JSON:
+
+```json
+{
+  "machine": "RK3229",
+  "system": {
+    "os": "Armbian",
+    "kernel": "6.18.x",
+    "architecture": "armhf",
+    "uptime": "14 days",
+    "uptime_seconds": 1209600
+  },
+  "versions": {
+    "application": "v0.4.2",
+    "status": "v0.2.0",
+    "updater": "v0.1.1"
+  },
+  "updates": {
+    "available": true,
+    "status_text": "YES",
+    "message": "Updates available"
+  }
+}
+```
+
+### Action Endpoints
+
+- `POST /status/api/check` — Checks for available updates and returns updated status.
+- `POST /status/api/update` — Triggers update execution for host components.
+

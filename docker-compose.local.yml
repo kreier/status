@@ -1,0 +1,19 @@
+services:
+  status:
+    build: .
+    container_name: status-local
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - /etc/os-release:/host/etc/os-release:ro
+      - /etc/hostname:/host/etc/hostname:ro
+      - /proc:/host/proc:ro
+      - ./frontend:/app/frontend:ro
+      - ./core:/app/core:ro
+    environment:
+      - MACHINE_NAME=RK3229
+      - HOST_SYSTEM=Armbian
+      - APPLICATION_VERSION=v0.4.2
+      - UPDATER_VERSION=v0.1.1
+      - PORT=8000

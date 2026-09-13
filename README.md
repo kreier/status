@@ -1,61 +1,87 @@
 # status
 
-Source and documentation for [hv.io.vn/status](https://hv.io.vn/status) — a self-hosted
-status page published from a Raspberry Pi 4 on a home network via Cloudflare Tunnel.
+A lightweight host status service and dashboard for physical and virtual machines (e.g. Rockchip RK3229 TV boxes running Armbian, Raspberry Pis, home servers). Distributed as a multi-architecture container via GitHub Container Registry (`ghcr.io/kreier/status`).
 
-- 📖 **Documentation:** [kreier.github.io/status](https://kreier.github.io/status/) — how
-  this is designed and deployed
-- 🟢 **Live page:** [hv.io.vn/status](https://hv.io.vn/status) — the actual status page
+- 📖 **Documentation:** [kreier.github.io/status](https://kreier.github.io/status/)
+- 🟢 **Example live page:** [rk3229.hv.io.vn/status/](https://rk3229.hv.io.vn/status/) or local [http://rk3229/status](http://rk3229/status)
 
-This repository is *not* the status page — it's the code and docs that build it.
+## What it shows
 
-## What the live page shows
+```text
+RK3229
+────────────────────────
+System       Armbian
+Kernel       6.18.x
+Architecture armhf
+Uptime       14 days
 
-- Pi 4 uptime, memory, load
-- Internet speed (sampled every 2h, rendered as a heatmap)
-- Room temperature and A/C state
-- Number of images on the home NAS
-- GitHub repositories: category, stars, last updated
+Application  v0.4.2
+Status       v0.2.0
+Updater      v0.1.1
 
-## Repo layout
+Updates available: YES
 
-```
-status/
-├── docker-compose.yml     # what actually runs on the Pi
-├── Caddyfile
-├── .env.example
-├── config.example.yaml
-├── core/                  # shared config, hash-guard, status.json writer
-├── sources/               # one collector per file, grouped by category
-│   ├── system/            #   pi_stats.py
-│   ├── network/           #   speedtest_collector.py
-│   ├── home/              #   room_temp.py, ac_state.py, nas_images.py
-│   └── github/            #   github_repos.py
-├── scheduler.py           # entry point, per-collector intervals
-├── frontend/              # static page that renders status.json
-│
-├── docs/                  # GitHub Pages source — documentation, not code
-│   ├── index.md
-│   ├── ARCHITECTURE.md
-│   ├── HARDWARE.md
-│   └── SCHEMA.md
-├── mkdocs.yml
-├── .github/workflows/docs.yml
-│
-├── AGENTS.md               # for AI coding agents working in this repo
-├── TODO.md
-├── CHANGELOG.md
+[Check]
+[Update]
 ```
 
-The `docs/` build (via `mkdocs`) is entirely separate from the deploy path — updating the
-Pi is just `git pull && docker compose up -d --build` at the repo root; nothing under
-`docs/` affects it.
+- **Host Metrics**: Host system OS (e.g. Armbian), Linux kernel, architecture (`armhf`, `arm64`, `amd64`), and uptime.
+- **Component Versions**: Version tracking for host applications, status service, and updater.
+- **Actions & API**: Interactive `[Check]` and `[Update]` buttons powered by an extensible `/status/api` REST endpoint.
+- **Dual Routing**: Functions seamlessly at direct local URLs (`http://<host>/status`) and behind reverse proxies like Traefik (`https://<host>.hv.io.vn/status/`).
 
-## Explicitly not in this repo
+## Quick Start (Docker Compose)
 
-- Secrets: API tokens, Cloudflare Tunnel token, `.env`, `config.yaml` (only the `.example`
-  versions are tracked — see `.gitignore`)
-- Anything that reveals exact home address / network topology beyond "a home network"
+Create a directory on your machine (e.g. `mkdir -p ~/status && cd ~/status`) with the following `docker-compose.yml`:
+
+```yaml
+services:
+  status:
+    image: ghcr.io/kreier/status:latest
+    container_name: status
+    restart: unless-stopped
+    ports:
+      - "80:8000"
+    volumes:
+      # Read-only mounts to inspect host metrics
+      - /etc/os-release:/host/etc/os-release:ro
+      - /etc/hostname:/host/etc/hostname:ro
+      - /proc:/host/proc:ro
+    environment:
+      - MACHINE_NAME=RK3229 # Optional override (otherwise detected automatically)
+      - APPLICATION_VERSION=v0.4.2
+      - UPDATER_VERSION=v0.1.1
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.status.rule=Host(`rk3229.hv.io.vn`) && PathPrefix(`/status`)"
+      - "traefik.http.routers.status.entrypoints=websecure"
+      - "traefik.http.routers.status.tls=true"
+      - "traefik.http.services.status.loadbalancer.server.port=8000"
+```
+
+Start the container:
+
+```bash
+docker compose up -d
+```
+
+Access the dashboard:
+- Locally: `http://<machine-ip-or-hostname>/status`
+- Reverse proxy (Traefik): `https://rk3229.hv.io.vn/status/`
+- API endpoint: `http://<host>/status/api/status`
+
+## Multi-Architecture Container Support
+
+Images are automatically built and published via GitHub Actions to `ghcr.io/kreier/status` for:
+- `linux/arm/v7` (32-bit ARM, e.g. Rockchip RK3229 TV boxes, Raspberry Pi 2/3 32-bit)
+- `linux/arm64` (64-bit ARM, e.g. Raspberry Pi 4/5, Apple Silicon)
+- `linux/amd64` (Standard x86_64 servers and PCs)
+
+## API Endpoints
+
+- `GET /status/api` or `GET /status/api/status`: Returns JSON status object.
+- `POST /status/api/check`: Triggers update check.
+- `POST /status/api/update`: Triggers update execution.
 
 ## License
 
