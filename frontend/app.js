@@ -46,7 +46,7 @@ function render(data) {
     setText("uptime", data.system.uptime || "--");
   }
 
-  // Handle tuptime stats if available
+  // Handle tuptime stats
   const rowLife = document.getElementById("row-system-life");
   const rowUptime = document.getElementById("row-system-uptime");
   if (data.tuptime && data.tuptime.available) {
@@ -67,8 +67,18 @@ function render(data) {
       }
     }
   } else {
-    if (rowLife) rowLife.style.display = "none";
-    if (rowUptime) rowUptime.style.display = "none";
+    // Show System life as not available
+    if (rowLife) {
+      rowLife.style.display = "flex";
+      setText("system-life", "not available");
+      const valLife = document.getElementById("system-life");
+      if (valLife) {
+        valLife.title = (data.tuptime && data.tuptime.reason) ? data.tuptime.reason : "Mount /var/lib/tuptime in docker-compose.yml";
+      }
+    }
+    if (rowUptime) {
+      rowUptime.style.display = "none";
+    }
   }
 
   if (data.versions) {

@@ -11,7 +11,7 @@ import socket
 import sqlite3
 from typing import Any, Dict, Optional
 
-STATUS_VERSION = "v0.2.0"
+STATUS_VERSION = "v0.2.1"
 
 # In-memory state for update checking
 _update_state = {
@@ -144,21 +144,24 @@ def get_uptime() -> Dict[str, Any]:
 
 
 def _format_tuptime_duration(seconds: int) -> str:
-    """Format seconds into tuptime-style duration (e.g. 9d 05h 49m 29s)."""
+    """Format seconds into tuptime-style duration (e.g. 2yr 222d 4h 14m 24s)."""
     if seconds < 0:
         seconds = 0
     days, rem = divmod(seconds, 86400)
     hours, rem = divmod(rem, 3600)
     minutes, secs = divmod(rem, 60)
+    years, days = divmod(days, 365)
 
     parts = []
-    if days > 0:
+    if years > 0:
+        parts.append(f"{years}yr")
+    if days > 0 or years > 0:
         parts.append(f"{days}d")
-    if hours > 0 or days > 0:
-        parts.append(f"{hours:02d}h" if days > 0 else f"{hours}h")
-    if minutes > 0 or hours > 0 or days > 0:
-        parts.append(f"{minutes:02d}m" if (days > 0 or hours > 0) else f"{minutes}m")
-    parts.append(f"{secs:02d}s" if (days > 0 or hours > 0 or minutes > 0) else f"{secs}s")
+    if hours > 0 or days > 0 or years > 0:
+        parts.append(f"{hours}h")
+    if minutes > 0 or hours > 0 or days > 0 or years > 0:
+        parts.append(f"{minutes}m")
+    parts.append(f"{secs}s")
 
     return " ".join(parts)
 
@@ -183,7 +186,12 @@ def get_tuptime() -> Dict[str, Any]:
             break
 
     if not target_db:
-        return {"available": False}
+        return {
+            "available": False,
+            "system_life": "not available",
+            "uptime_rate_formatted": "not available",
+            "reason": "tuptime database not found (/host/var/lib/tuptime/tuptime.db). Mount /var/lib/tuptime in docker-compose.yml",
+        }
 
     try:
         try:
@@ -200,7 +208,12 @@ def get_tuptime() -> Dict[str, Any]:
         conn.close()
 
         if not rows:
-            return {"available": False}
+            return {
+                "available": False,
+                "system_life": "not available",
+                "uptime_rate_formatted": "not available",
+                "reason": "tuptime database is empty",
+            }
 
         startups = len(rows)
         shutdowns_ok = sum(1 for r in rows if r["offbtime"] is not None and r["endst"] == 1)
@@ -236,8 +249,13 @@ def get_tuptime() -> Dict[str, Any]:
             "total_downtime": _format_tuptime_duration(total_down),
             "total_downtime_seconds": total_down,
         }
-    except Exception:
-        return {"available": False}
+    except Exception as e:
+        return {
+            "available": False,
+            "system_life": "not available",
+            "uptime_rate_formatted": "not available",
+            "reason": f"error reading tuptime database: {str(e)}",
+        }
 
 
 def get_versions() -> Dict[str, str]:

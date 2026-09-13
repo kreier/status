@@ -5,6 +5,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-09-14
+
+### Added
+- Multi-year formatting support for `tuptime` system life (e.g. `2yr 222d 4h 14m 24s`).
+- Explicit `System life: not available` display with informative tooltip reason when host `/var/lib/tuptime` is unmounted.
+
 ## [0.2.0] - 2026-09-14
 
 ### Added
