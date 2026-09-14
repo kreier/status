@@ -15,7 +15,7 @@ import sqlite3
 import time
 from typing import Any, Dict, List, Optional, Union
 
-STATUS_VERSION = "v0.3.2"
+STATUS_VERSION = "v0.3.3"
 
 # In-memory state for update checking
 _update_state = {
@@ -450,9 +450,12 @@ def get_uptime_history(days: int = 90, year: Optional[Union[int, str]] = None) -
 
                     day_up = 0
                     bad_shutdowns = 0
+                    restarts = 0
                     for b in boots:
                         overlap = max(0, min(b["end"], day_window_end) - max(b["start"], d_start))
                         day_up += overlap
+                        if d_start <= b["start"] <= day_window_end:
+                            restarts += 1
                         if b["endst"] == 0 and d_start <= b["end"] <= day_window_end:
                             bad_shutdowns += 1
 
@@ -469,6 +472,7 @@ def get_uptime_history(days: int = 90, year: Optional[Union[int, str]] = None) -
                         "uptime_pct": min(100.0, pct),
                         "uptime_seconds": day_up,
                         "total_seconds": day_duration,
+                        "restarts": restarts,
                         "bad_shutdowns": bad_shutdowns,
                         "status": "online" if pct > 0 else "offline",
                     })
@@ -516,9 +520,12 @@ def get_uptime_history(days: int = 90, year: Optional[Union[int, str]] = None) -
 
             day_up = 0
             bad_shutdowns = 0
+            restarts = 0
             for b in boots:
                 overlap = max(0, min(b["end"], d_end) - max(b["start"], d_start))
                 day_up += overlap
+                if d_start <= b["start"] <= d_end:
+                    restarts += 1
                 if b["endst"] == 0 and d_start <= b["end"] <= d_end:
                     bad_shutdowns += 1
 
@@ -533,6 +540,7 @@ def get_uptime_history(days: int = 90, year: Optional[Union[int, str]] = None) -
                 "uptime_pct": min(100.0, pct),
                 "uptime_seconds": day_up,
                 "total_seconds": day_duration,
+                "restarts": restarts,
                 "bad_shutdowns": bad_shutdowns,
                 "status": "online" if pct > 0 else "offline",
             })

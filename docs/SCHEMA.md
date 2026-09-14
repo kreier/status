@@ -172,6 +172,7 @@ Returns historical daily uptime percentage, uptime duration in seconds, and bad 
           "uptime_pct": 100.0,
           "uptime_seconds": 45800,
           "total_seconds": 45800,
+          "restarts": 1,
           "bad_shutdowns": 0,
           "status": "online"
         },

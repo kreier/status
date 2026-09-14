@@ -54,14 +54,23 @@ function render(data) {
 
   // Handle tuptime stats
   const rowLife = document.getElementById("row-system-life");
+  const rowStarts = document.getElementById("row-system-starts");
   const rowUptime = document.getElementById("row-system-uptime");
   if (data.tuptime && data.tuptime.available) {
     if (rowLife) {
       rowLife.style.display = "flex";
-      setText("system-life", `${data.tuptime.system_life} (${data.tuptime.startups} starts)`);
+      setText("system-life", `${data.tuptime.system_life}`);
       const valLife = document.getElementById("system-life");
       if (valLife) {
-        valLife.title = `Startups: ${data.tuptime.startups}, Shutdowns: ${data.tuptime.shutdowns_formatted}`;
+        valLife.title = "Click to toggle annual availability heatmap";
+      }
+    }
+    if (rowStarts) {
+      rowStarts.style.display = "flex";
+      setText("system-starts", `${data.tuptime.startups} (${data.tuptime.shutdowns_formatted})`);
+      const valStarts = document.getElementById("system-starts");
+      if (valStarts) {
+        valStarts.title = `Startups: ${data.tuptime.startups}, Shutdowns: ${data.tuptime.shutdowns_formatted}`;
       }
     }
     if (rowUptime) {
@@ -81,6 +90,9 @@ function render(data) {
       if (valLife) {
         valLife.title = (data.tuptime && data.tuptime.reason) ? data.tuptime.reason : "Mount /var/lib/tuptime in docker-compose.yml";
       }
+    }
+    if (rowStarts) {
+      rowStarts.style.display = "none";
     }
     if (rowUptime) {
       rowUptime.style.display = "none";
@@ -251,6 +263,10 @@ function renderMultiYearGrid(data) {
           heatClass = "heat-future";
         } else if (item.status === "unrecorded" || item.uptime_pct === null) {
           heatClass = "heat-unrecorded";
+        } else if (item.bad_shutdowns > 0) {
+          heatClass = "heat-bad-stop";
+        } else if (item.restarts > 0) {
+          heatClass = "heat-restart";
         } else if (item.uptime_pct >= 99.5) {
           heatClass = "heat-full";
         } else if (item.uptime_pct >= 95.0) {
@@ -267,11 +283,25 @@ function renderMultiYearGrid(data) {
         if (item.status !== "future") {
           const hours = (item.uptime_seconds / 3600).toFixed(1);
           const pctStr = item.uptime_pct !== null ? `${item.uptime_pct}%` : "No data";
-          const badStr = item.bad_shutdowns > 0 ? ` &middot; ${item.bad_shutdowns} bad stop${item.bad_shutdowns > 1 ? "s" : ""}` : "";
-          const tooltipMsg = `${item.date}: ${pctStr} uptime (${hours}h)${badStr}`;
+          const eventParts = [];
+          if (item.restarts > 0) {
+            eventParts.push(`${item.restarts} restart${item.restarts > 1 ? "s" : ""}`);
+          }
+          if (item.bad_shutdowns > 0) {
+            eventParts.push(`${item.bad_shutdowns} bad stop${item.bad_shutdowns > 1 ? "s" : ""}`);
+          }
+          const eventsStr = eventParts.length > 0 ? ` &middot; ${eventParts.join(", ")}` : "";
+          const tooltipMsg = `${item.date}: ${pctStr} uptime (${hours}h)${eventsStr}`;
 
-          cell.addEventListener("mouseenter", () => updateGridTooltip(tooltipMsg, item.status));
-          cell.addEventListener("click", () => updateGridTooltip(tooltipMsg, item.status));
+          let tipStatus = item.status;
+          if (item.bad_shutdowns > 0) {
+            tipStatus = "bad stop";
+          } else if (item.restarts > 0) {
+            tipStatus = "restart";
+          }
+
+          cell.addEventListener("mouseenter", () => updateGridTooltip(tooltipMsg, tipStatus));
+          cell.addEventListener("click", () => updateGridTooltip(tooltipMsg, tipStatus));
         }
 
         col.appendChild(cell);
@@ -288,7 +318,14 @@ function renderMultiYearGrid(data) {
 function updateGridTooltip(htmlContent, status) {
   const tip = document.getElementById("grid-tooltip");
   if (!tip) return;
-  const badgeColor = status === "offline" ? "#ef4444" : (status === "unrecorded" ? "#71717a" : "#10b981");
+  let badgeColor = "#10b981";
+  if (status === "bad stop" || status === "offline") {
+    badgeColor = "#ef4444";
+  } else if (status === "restart") {
+    badgeColor = "#f97316";
+  } else if (status === "unrecorded") {
+    badgeColor = "#71717a";
+  }
   const badgeText = status ? status.toUpperCase() : "OK";
   tip.innerHTML = `<span>${htmlContent}</span><span style="font-family:monospace; font-size:0.68rem; color:${badgeColor}; font-weight:600;">${badgeText}</span>`;
 }
@@ -342,6 +379,8 @@ function renderTimeline(data) {
       bar.style.border = "1px dashed var(--border)";
     } else if (item.bad_shutdowns > 0) {
       bar.style.backgroundColor = "#ef4444";
+    } else if (item.restarts > 0) {
+      bar.style.backgroundColor = "#f97316";
     } else if (item.uptime_pct >= 99.5) {
       bar.style.backgroundColor = "#10b981";
     } else if (item.uptime_pct >= 95.0) {
@@ -354,11 +393,19 @@ function renderTimeline(data) {
 
     const hours = (item.uptime_seconds / 3600).toFixed(1);
     const pctStr = item.uptime_pct !== null ? `${item.uptime_pct}%` : "No data";
-    const badStr = item.bad_shutdowns > 0 ? ` &middot; ${item.bad_shutdowns} bad stop${item.bad_shutdowns > 1 ? "s" : ""}` : "";
-    const tooltipMsg = `${item.date}: ${pctStr} uptime (${hours}h)${badStr}`;
+    const eventParts = [];
+    if (item.restarts > 0) {
+      eventParts.push(`${item.restarts} restart${item.restarts > 1 ? "s" : ""}`);
+    }
+    if (item.bad_shutdowns > 0) {
+      eventParts.push(`${item.bad_shutdowns} bad stop${item.bad_shutdowns > 1 ? "s" : ""}`);
+    }
+    const eventsStr = eventParts.length > 0 ? ` &middot; ${eventParts.join(", ")}` : "";
+    const tooltipMsg = `${item.date}: ${pctStr} uptime (${hours}h)${eventsStr}`;
 
-    bar.addEventListener("mouseenter", () => updateTimelineTooltip(tooltipMsg, item.bad_shutdowns > 0 ? "warning" : "ok"));
-    bar.addEventListener("click", () => updateTimelineTooltip(tooltipMsg, item.bad_shutdowns > 0 ? "warning" : "ok"));
+    const tipStatus = item.bad_shutdowns > 0 ? "warning" : (item.restarts > 0 ? "restart" : "ok");
+    bar.addEventListener("mouseenter", () => updateTimelineTooltip(tooltipMsg, tipStatus));
+    bar.addEventListener("click", () => updateTimelineTooltip(tooltipMsg, tipStatus));
     container.appendChild(bar);
   });
 }
@@ -366,8 +413,18 @@ function renderTimeline(data) {
 function updateTimelineTooltip(htmlContent, status) {
   const tip = document.getElementById("timeline-tooltip");
   if (!tip) return;
-  const badgeColor = status === "warning" ? "#ef4444" : (status === "unrecorded" ? "#71717a" : "#10b981");
-  const badgeText = status === "warning" ? "INCIDENT" : (status === "unrecorded" ? "UNRECORDED" : "OPERATIONAL");
+  let badgeColor = "#10b981";
+  let badgeText = "OPERATIONAL";
+  if (status === "warning") {
+    badgeColor = "#ef4444";
+    badgeText = "INCIDENT";
+  } else if (status === "restart") {
+    badgeColor = "#f97316";
+    badgeText = "RESTART";
+  } else if (status === "unrecorded") {
+    badgeColor = "#71717a";
+    badgeText = "UNRECORDED";
+  }
   tip.innerHTML = `<span>${htmlContent}</span><span style="font-family:monospace; font-size:0.68rem; color:${badgeColor}; font-weight:600;">${badgeText}</span>`;
 }
 

@@ -17,7 +17,7 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="style.css?v=0.3.1">
+  <link rel="stylesheet" href="style.css?v=0.3.3">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2240%22 fill=%22%2310b981%22/%3E%3C/svg%3E">
 </head>
 <body>
@@ -29,6 +29,12 @@
         <span class="indicator-dot" title="Online"></span>
       </div>
       <div class="divider">────────────────────────</div>
+
+      <!-- View toggles at top, above System info -->
+      <div class="view-toggles" id="view-toggles">
+        <button id="btn-toggle-grid" class="btn btn-view" type="button" onclick="toggleCard('grid')">[Heatmap]</button>
+        <button id="btn-toggle-timeline" class="btn btn-view" type="button" onclick="toggleCard('timeline')">[90-day Timeline]</button>
+      </div>
 
       <div class="stat-group">
         <div class="stat-row">
@@ -49,7 +55,11 @@
         </div>
         <div class="stat-row" id="row-system-life" style="display: none;">
           <span class="label">System life</span>
-          <span class="value link-value" id="system-life" title="Toggle annual availability grid" onclick="toggleCard('grid')">--</span>
+          <span class="value link-value" id="system-life" title="Toggle annual availability heatmap" onclick="toggleCard('grid')">--</span>
+        </div>
+        <div class="stat-row" id="row-system-starts" style="display: none;">
+          <span class="label">Restarts</span>
+          <span class="value" id="system-starts">--</span>
         </div>
         <div class="stat-row" id="row-system-uptime" style="display: none;">
           <span class="label">System uptime</span>
@@ -84,8 +94,6 @@
       <div class="actions">
         <button id="btn-check" class="btn" type="button">[Check]</button>
         <button id="btn-update" class="btn btn-primary" type="button">[Update]</button>
-        <button id="btn-toggle-grid" class="btn btn-secondary" type="button" onclick="toggleCard('grid')">[Grid]</button>
-        <button id="btn-toggle-timeline" class="btn btn-secondary" type="button" onclick="toggleCard('timeline')">[Timeline]</button>
       </div>
 
       <div id="action-feedback" class="action-feedback"></div>
@@ -95,11 +103,11 @@
       </div>
     </div>
 
-    <!-- 2. Additional Rectangle Box Below: Annual Availability Grid -->
+    <!-- 2. Additional Rectangle Box Below: Annual Availability Heatmap -->
     <div class="extra-card" id="card-availability-grid" style="display: none;">
       <div class="extra-card-header">
         <div class="extra-card-title">
-          <span>Annual Availability Grid</span>
+          <span>Annual Availability Heatmap</span>
           <span class="badge-sub" id="grid-years-count">--</span>
         </div>
         <button type="button" class="btn-close" onclick="toggleCard('grid')" title="Close">&times;</button>
@@ -107,14 +115,16 @@
       <div class="divider">────────────────────────</div>
 
       <div class="heatmap-legend-bar">
-        <span>Tuptime Annual History (365 Days/Year)</span>
+        <span>Tuptime Daily Availability</span>
         <div class="heatmap-legend">
+          <span>100% Up</span>
+          <span class="legend-box" style="background:#10b981;" title="100% Operational"></span>
+          <span>Restart</span>
+          <span class="legend-box" style="background:#f97316;" title="Restart occurred"></span>
+          <span>Bad Stop</span>
+          <span class="legend-box" style="background:#ef4444;" title="Bad stop / Outage"></span>
           <span>Down</span>
-          <span class="legend-box" style="background:#3f3f46;"></span>
-          <span class="legend-box" style="background:#f59e0b;"></span>
-          <span class="legend-box" style="background:#34d399;"></span>
-          <span class="legend-box" style="background:#10b981;"></span>
-          <span>100%</span>
+          <span class="legend-box" style="background:#3f3f46;" title="Downtime"></span>
         </div>
       </div>
 
@@ -168,6 +178,6 @@
       </div>
     </div>
   </div>
-  <script src="app.js?v=0.3.1"></script>
+  <script src="app.js?v=0.3.3"></script>
 </body>
 </html>
