@@ -5,6 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-09-14
+
+### Fixed
+- Fixed container crash on startup (`NameError: name 'Union' is not defined`) in Python 3.12 environments by importing `Union` and adding `from __future__ import annotations` to `core/host_info.py` and `app.py`.
+
 ## [0.3.1] - 2026-09-14
 
 ### Added

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Host information inspection and status detection utility.
 
 Safely reads host information from inside a Docker container using
@@ -11,9 +13,9 @@ import platform
 import socket
 import sqlite3
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Union
 
-STATUS_VERSION = "v0.3.1"
+STATUS_VERSION = "v0.3.2"
 
 # In-memory state for update checking
 _update_state = {
