@@ -5,6 +5,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-09-14
+
+### Added
+- **Multi-Year Annual Grids**: Availability grid now queries and renders all concerned years recorded in `tuptime.db` (e.g. 2024, 2025, 2026), generating 365-day heatmaps for each year with tracked, future, and unrecorded states.
+- **Decoupled Togglable Cards**: Main status badge is a centered floating rectangle card. Availability Grid and 90-Day Timeline open as separate rectangular card boxes below the main card when toggled.
+- **Tuptime Records API**: Added `GET /api/tuptime` and `GET /status/api/tuptime` returning all boot records from `tuptime.db` as JSON for diagnostics and inspection.
+- **Multi-Year History API**: Enhanced `/status/api/history` to accept `?year=all` or `?year=YYYY` returning full yearly matrices.
+
+### Changed
+- **System Life Link Styling**: Removed underlines from "System life" and "System uptime" links, rendering them in clean blue (`#60a5fa`) with hover effect.
+
 ## [0.3.0] - 2026-09-14
 
 ### Added

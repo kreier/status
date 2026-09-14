@@ -34,11 +34,19 @@ try:
     @app.route("/api/history", methods=["GET"], strict_slashes=False)
     @app.route("/status/api/history", methods=["GET"], strict_slashes=False)
     def get_history():
+        year = request.args.get("year") or request.args.get("years")
+        if year:
+            return jsonify(host_info.get_uptime_history(year=year))
         try:
             days = int(request.args.get("days", 90))
         except (ValueError, TypeError):
             days = 90
         return jsonify(host_info.get_uptime_history(days=days))
+
+    @app.route("/api/tuptime", methods=["GET"], strict_slashes=False)
+    @app.route("/status/api/tuptime", methods=["GET"], strict_slashes=False)
+    def get_tuptime_raw():
+        return jsonify(host_info.get_tuptime_entries())
 
     @app.route("/api/check", methods=["POST"], strict_slashes=False)
     @app.route("/status/api/check", methods=["POST"], strict_slashes=False)
@@ -107,12 +115,19 @@ except ImportError:
                 self._send_json(host_info.get_all_status())
                 return
             elif path in ("/api/history", "/status/api/history"):
-                days = 90
                 from urllib.parse import parse_qs
                 qs = parse_qs(parsed.query)
+                year = qs.get("year", [None])[0] or qs.get("years", [None])[0]
+                if year:
+                    self._send_json(host_info.get_uptime_history(year=year))
+                    return
+                days = 90
                 if "days" in qs and qs["days"][0].isdigit():
                     days = int(qs["days"][0])
                 self._send_json(host_info.get_uptime_history(days=days))
+                return
+            elif path in ("/api/tuptime", "/status/api/tuptime"):
+                self._send_json(host_info.get_tuptime_entries())
                 return
             elif path.startswith("/status/"):
                 # Strip /status prefix for static assets
