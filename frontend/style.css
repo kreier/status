@@ -47,7 +47,7 @@ body {
 
 .container {
   width: 100%;
-  max-width: 680px;
+  max-width: 840px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -66,7 +66,7 @@ body {
 
 .extra-card {
   width: 100%;
-  max-width: 680px;
+  max-width: 840px;
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -316,6 +316,60 @@ h1 {
   border-color: rgba(96, 165, 250, 0.4);
 }
 
+/* View toggle buttons at top of main card */
+.view-toggles {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.95rem;
+  width: 100%;
+}
+
+.btn-view {
+  flex: 1;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.45rem 0.6rem;
+  background-color: rgba(16, 185, 129, 0.08);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  text-align: center;
+}
+
+.btn-view:hover:not(:disabled) {
+  background-color: rgba(16, 185, 129, 0.18);
+  border-color: #34d399;
+  color: #6ee7b7;
+}
+
+.btn-view.active {
+  background-color: #10b981;
+  color: #022c22;
+  border-color: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+  font-weight: 700;
+}
+
+@media (prefers-color-scheme: light) {
+  .btn-view {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #047857;
+    border-color: rgba(16, 185, 129, 0.35);
+  }
+  .btn-view:hover:not(:disabled) {
+    background-color: rgba(16, 185, 129, 0.2);
+    color: #065f46;
+  }
+  .btn-view.active {
+    background-color: #10b981;
+    color: #ffffff;
+    border-color: #10b981;
+  }
+}
+
 /* Multi-Year Grid Layout */
 .multi-year-container {
   display: flex;
@@ -481,6 +535,14 @@ h1 {
 
 .heat-cell.heat-med {
   background-color: #f59e0b;
+}
+
+.heat-cell.heat-restart {
+  background-color: #f97316 !important;
+}
+
+.heat-cell.heat-bad-stop {
+  background-color: #ef4444 !important;
 }
 
 .heat-cell.heat-low {

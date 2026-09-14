@@ -5,7 +5,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-## [0.3.2] - 2026-09-14
+## [0.3.3] - 2026-09-14
+
+### Added
+- **Day Cell Restart & Bad Stop Indicators**: Added orange (`#f97316`) indicator for restarts and red (`#ef4444`) indicator for bad shutdowns on both the Annual Availability Heatmap and 90-Day Timeline.
+- **Dedicated Restarts Metric Row**: Moved restarts into a distinct `Restarts` row showing startup count and shutdown breakdown (e.g. `12 (10 ok, 2 bad)`), leaving `System life` clean and uncombined.
+
+### Changed
+- **Top View Toggle Buttons**: Positioned `[Heatmap]` and `[90-day Timeline]` toggle buttons at the top of the card above System info, styled with a distinct green theme (`rgba(16, 185, 129, 0.08)`) and vibrant solid green active state with glow.
+- **Full Annual Heatmap Width**: Expanded container and extra-card max-width from 680px to 840px so the complete 53-week annual calendar grid displays without requiring horizontal scrolling.
 
 ### Fixed
 - Fixed container crash on startup (`NameError: name 'Union' is not defined`) in Python 3.12 environments by importing `Union` and adding `from __future__ import annotations` to `core/host_info.py` and `app.py`.

@@ -51,9 +51,9 @@ class TestHostInfo(unittest.TestCase):
         for k in ["APPLICATION_VERSION", "APP_VERSION", "STATUS_VERSION", "UPDATER_VERSION"]:
             os.environ.pop(k, None)
         versions = host_info.get_versions()
-        self.assertEqual(versions["status"], "v0.3.2")
+        self.assertEqual(versions["status"], "v0.3.3")
         self.assertEqual(versions["updater"], "v0.1.0")
-        self.assertEqual(versions["application"], "v0.3.2")
+        self.assertEqual(versions["application"], "v0.3.3")
 
     def test_uptime_history(self):
         hist = host_info.get_uptime_history(days=30)
