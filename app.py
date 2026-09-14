@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Status page web application and API service.
 
 Serves the host status dashboard and JSON API.
