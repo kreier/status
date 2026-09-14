@@ -100,6 +100,7 @@ Images are packaged as lightweight multi-architecture containers (~11–15 MB co
 
 - `GET /status/api` or `GET /status/api/status`: Returns JSON status object.
 - `GET /status/api/history?days=90`: Returns daily uptime percentage and bad shutdown timeline (past 1 to 365 days).
+- `GET /status/api/tuptime`: Returns raw & formatted boot records from `tuptime.db` as JSON.
 - `POST /status/api/check`: Checks for updates against GitHub Releases.
 - `POST /status/api/update`: Triggers update execution via Watchtower or host script.
 

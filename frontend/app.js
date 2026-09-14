@@ -124,64 +124,69 @@ function showFeedback(text, isError = false) {
   }, 4000);
 }
 
-// Tab navigation
-function switchTab(tabId) {
-  const tabs = ["overview", "grid", "timeline"];
-  tabs.forEach((t) => {
-    const btn = document.getElementById(`btn-tab-${t}`);
-    const content = document.getElementById(`tab-content-${t}`);
-    if (btn) btn.classList.toggle("active", t === tabId);
-    if (content) content.style.display = t === tabId ? "block" : "none";
-  });
+// Toggle extra card boxes below the floating status badge
+function toggleCard(cardId) {
+  const cardEl = document.getElementById(`card-${cardId === "grid" ? "availability-grid" : "timeline"}`);
+  const btnEl = document.getElementById(`btn-toggle-${cardId}`);
+  if (!cardEl) return;
 
-  const mainContainer = document.getElementById("main-container");
-  if (mainContainer) {
-    mainContainer.classList.toggle("wide", tabId !== "overview");
+  const isVisible = cardEl.style.display !== "none";
+  const nextVisible = !isVisible;
+  cardEl.style.display = nextVisible ? "block" : "none";
+
+  if (btnEl) {
+    btnEl.classList.toggle("active", nextVisible);
   }
 
-  if (tabId === "grid") {
-    loadAndRenderHeatmap();
-  } else if (tabId === "timeline") {
-    loadAndRenderTimeline();
+  if (nextVisible) {
+    if (cardId === "grid") {
+      loadAndRenderMultiYearGrid();
+    } else if (cardId === "timeline") {
+      loadAndRenderTimeline();
+    }
+    setTimeout(() => {
+      cardEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 50);
   }
 }
-window.switchTab = switchTab;
+window.toggleCard = toggleCard;
 
-async function fetchHistory(days) {
-  if (historyCache[days]) {
-    return historyCache[days];
+async function fetchHistory(query) {
+  const cacheKey = typeof query === "string" ? query : String(query);
+  if (historyCache[cacheKey]) {
+    return historyCache[cacheKey];
   }
   try {
-    const res = await fetch(apiUrl(`history?days=${days}`));
+    const res = await fetch(apiUrl(`history?${cacheKey.startsWith("year") || cacheKey.startsWith("days") ? cacheKey : "days=" + cacheKey}`));
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    historyCache[days] = data;
+    historyCache[cacheKey] = data;
     return data;
   } catch (err) {
-    console.error(`[status] Failed to fetch history (${days} days):`, err);
+    console.error(`[status] Failed to fetch history (${query}):`, err);
     return null;
   }
 }
 
-async function loadAndRenderHeatmap() {
-  const data = await fetchHistory(364);
-  renderHeatmap(data);
+async function loadAndRenderMultiYearGrid() {
+  const data = await fetchHistory("year=all");
+  renderMultiYearGrid(data);
 }
 
 async function loadAndRenderTimeline() {
-  const data = await fetchHistory(90);
+  const data = await fetchHistory("days=90");
   renderTimeline(data);
 }
 
-function renderHeatmap(data) {
-  const gridContainer = document.getElementById("heatmap-grid-container");
-  if (!gridContainer) return;
+function renderMultiYearGrid(data) {
+  const container = document.getElementById("multi-year-grid-container");
+  if (!container) return;
 
-  if (!data || !data.available || !data.history || data.history.length === 0) {
-    setText("grid-rate", "--");
-    setText("grid-days", "0 Days");
-    setText("grid-bad", "--");
-    gridContainer.innerHTML = `
+  const countBadge = document.getElementById("grid-years-count");
+
+  if (!data || !data.available || !data.years || data.years.length === 0) {
+    if (countBadge) countBadge.textContent = "0 Years";
+    container.innerHTML = `
       <div style="padding: 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.8rem; width: 100%;">
         Tuptime history is not available.<br>
         <span style="font-size: 0.72rem;">Mount <code>/var/lib/tuptime</code> in docker-compose.yml to enable.</span>
@@ -190,51 +195,94 @@ function renderHeatmap(data) {
     return;
   }
 
-  setText("grid-rate", data.overall_rate_formatted || "--");
-  setText("grid-days", `${data.history.length} Days`);
-  setText("grid-bad", `${data.total_bad_shutdowns}`);
-
-  gridContainer.innerHTML = "";
-  const history = data.history;
-  const weeks = Math.ceil(history.length / 7);
-
-  for (let w = 0; w < weeks; w++) {
-    const col = document.createElement("div");
-    col.className = "heat-col";
-    for (let d = 0; d < 7; d++) {
-      const idx = w * 7 + d;
-      if (idx >= history.length) break;
-      const item = history[idx];
-      const cell = document.createElement("div");
-      cell.className = "heat-cell";
-
-      let heatClass = "heat-full";
-      if (item.uptime_pct === null) {
-        heatClass = "heat-unrecorded";
-      } else if (item.uptime_pct >= 99.5) {
-        heatClass = "heat-full";
-      } else if (item.uptime_pct >= 95.0) {
-        heatClass = "heat-high";
-      } else if (item.uptime_pct >= 80.0) {
-        heatClass = "heat-med";
-      } else if (item.uptime_pct > 0.0) {
-        heatClass = "heat-low";
-      } else {
-        heatClass = "heat-none";
-      }
-      cell.classList.add(heatClass);
-
-      const hours = (item.uptime_seconds / 3600).toFixed(1);
-      const pctStr = item.uptime_pct !== null ? `${item.uptime_pct}%` : "No data";
-      const badStr = item.bad_shutdowns > 0 ? ` &middot; ${item.bad_shutdowns} bad stop${item.bad_shutdowns > 1 ? "s" : ""}` : "";
-      const tooltipMsg = `${item.date}: ${pctStr} uptime (${hours}h)${badStr}`;
-
-      cell.addEventListener("mouseenter", () => updateGridTooltip(tooltipMsg, item.status));
-      cell.addEventListener("click", () => updateGridTooltip(tooltipMsg, item.status));
-      col.appendChild(cell);
-    }
-    gridContainer.appendChild(col);
+  if (countBadge) {
+    countBadge.textContent = `${data.years.length} Year${data.years.length !== 1 ? "s" : ""}`;
   }
+
+  container.innerHTML = "";
+  const currentYear = new Date().getFullYear();
+
+  data.years.forEach((yr) => {
+    const yrInfo = data.yearly && data.yearly[String(yr)];
+    if (!yrInfo || !yrInfo.history) return;
+
+    const block = document.createElement("div");
+    block.className = "year-block";
+
+    const header = document.createElement("div");
+    header.className = "year-header";
+
+    const title = document.createElement("span");
+    title.className = "year-title";
+    title.textContent = yr === currentYear ? `${yr} (YTD)` : `${yr}`;
+
+    const meta = document.createElement("div");
+    meta.className = "year-meta";
+    meta.innerHTML = `
+      <span class="year-rate">${yrInfo.overall_rate_formatted} uptime</span>
+      <span class="year-badge">${yrInfo.total_bad_shutdowns} bad stop${yrInfo.total_bad_shutdowns !== 1 ? "s" : ""}</span>
+    `;
+
+    header.appendChild(title);
+    header.appendChild(meta);
+    block.appendChild(header);
+
+    const scrollWrap = document.createElement("div");
+    scrollWrap.className = "heatmap-scroll";
+
+    const grid = document.createElement("div");
+    grid.className = "heatmap-grid";
+
+    const history = yrInfo.history;
+    const weeks = Math.ceil(history.length / 7);
+
+    for (let w = 0; w < weeks; w++) {
+      const col = document.createElement("div");
+      col.className = "heat-col";
+      for (let d = 0; d < 7; d++) {
+        const idx = w * 7 + d;
+        if (idx >= history.length) break;
+        const item = history[idx];
+        const cell = document.createElement("div");
+        cell.className = "heat-cell";
+
+        let heatClass = "heat-full";
+        if (item.status === "future") {
+          heatClass = "heat-future";
+        } else if (item.status === "unrecorded" || item.uptime_pct === null) {
+          heatClass = "heat-unrecorded";
+        } else if (item.uptime_pct >= 99.5) {
+          heatClass = "heat-full";
+        } else if (item.uptime_pct >= 95.0) {
+          heatClass = "heat-high";
+        } else if (item.uptime_pct >= 80.0) {
+          heatClass = "heat-med";
+        } else if (item.uptime_pct > 0.0) {
+          heatClass = "heat-low";
+        } else {
+          heatClass = "heat-none";
+        }
+        cell.classList.add(heatClass);
+
+        if (item.status !== "future") {
+          const hours = (item.uptime_seconds / 3600).toFixed(1);
+          const pctStr = item.uptime_pct !== null ? `${item.uptime_pct}%` : "No data";
+          const badStr = item.bad_shutdowns > 0 ? ` &middot; ${item.bad_shutdowns} bad stop${item.bad_shutdowns > 1 ? "s" : ""}` : "";
+          const tooltipMsg = `${item.date}: ${pctStr} uptime (${hours}h)${badStr}`;
+
+          cell.addEventListener("mouseenter", () => updateGridTooltip(tooltipMsg, item.status));
+          cell.addEventListener("click", () => updateGridTooltip(tooltipMsg, item.status));
+        }
+
+        col.appendChild(cell);
+      }
+      grid.appendChild(col);
+    }
+
+    scrollWrap.appendChild(grid);
+    block.appendChild(scrollWrap);
+    container.appendChild(block);
+  });
 }
 
 function updateGridTooltip(htmlContent, status) {

@@ -52,5 +52,20 @@ class TestApp(unittest.TestCase):
                     self.assertIn("available", data)
                     self.assertIn("history", data)
 
+                for path in ["/api/history?year=all", "/status/api/history?year=all"]:
+                    res = c.get(path)
+                    self.assertEqual(res.status_code, 200, f"Failed for {path}")
+                    data = json.loads(res.data)
+                    self.assertIn("available", data)
+                    self.assertIn("years", data)
+                    self.assertIn("yearly", data)
+
+                for path in ["/api/tuptime", "/status/api/tuptime"]:
+                    res = c.get(path)
+                    self.assertEqual(res.status_code, 200, f"Failed for {path}")
+                    data = json.loads(res.data)
+                    self.assertIn("available", data)
+                    self.assertIn("entries", data)
+
 if __name__ == "__main__":
     unittest.main()

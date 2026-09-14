@@ -122,38 +122,106 @@ The host status container exposes its system inspection and version metrics as J
 Returns historical daily uptime percentage, uptime duration in seconds, and bad shutdowns computed from `tuptime` SQLite records:
 
 - **Query Parameters**:
-  - `days` (optional, default `90`, max `365`): Number of past days to compute.
+  - `days` (optional, default `90`, max `365`): Number of past continuous days to compute.
+  - `year` (optional, e.g. `all` or `2026`): When specified, returns full 365-day grids for all concerned years (or the requested year) with `years` and `yearly` payload.
+
+### Continuous Past Days Response (`?days=90`):
+```json
+{
+  "available": true,
+  "mode": "continuous",
+  "days": 90,
+  "years": [2026],
+  "overall_rate": 99.98,
+  "overall_rate_formatted": "99.98%",
+  "total_bad_shutdowns": 1,
+  "history": [ ... ]
+}
+```
+
+### Multi-Year Annual Grids Response (`?year=all`):
+```json
+{
+  "available": true,
+  "mode": "yearly",
+  "years": [2026, 2025, 2024],
+  "yearly": {
+    "2026": {
+      "year": 2026,
+      "overall_rate": 99.98,
+      "overall_rate_formatted": "99.98%",
+      "total_bad_shutdowns": 13,
+      "days": 365,
+      "history": [
+        {
+          "date": "2026-01-01",
+          "weekday": 3,
+          "month": 1,
+          "day": 1,
+          "uptime_pct": null,
+          "uptime_seconds": 0,
+          "total_seconds": 86400,
+          "bad_shutdowns": 0,
+          "status": "unrecorded"
+        },
+        {
+          "date": "2026-09-14",
+          "weekday": 0,
+          "month": 9,
+          "day": 14,
+          "uptime_pct": 100.0,
+          "uptime_seconds": 45800,
+          "total_seconds": 45800,
+          "bad_shutdowns": 0,
+          "status": "online"
+        },
+        {
+          "date": "2026-12-31",
+          "weekday": 3,
+          "month": 12,
+          "day": 31,
+          "uptime_pct": null,
+          "uptime_seconds": 0,
+          "total_seconds": 86400,
+          "bad_shutdowns": 0,
+          "status": "future"
+        }
+      ]
+    }
+  }
+}
+```
+
+- `uptime_pct`: `null` if the day was before the machine's recorded initial boot or future, or `0.0` to `100.0`.
+- `status`: `"online"`, `"offline"`, `"unrecorded"`, or `"future"`.
+
+## Tuptime Raw Records API (`/status/api/tuptime`)
+
+Returns all boot records directly from `/var/lib/tuptime/tuptime.db`:
 
 ```json
 {
   "available": true,
-  "days": 90,
-  "overall_rate": 99.98,
-  "overall_rate_formatted": "99.98%",
-  "total_bad_shutdowns": 1,
-  "history": [
+  "count": 23,
+  "entries": [
     {
-      "date": "2026-06-16",
-      "weekday": 1,
-      "uptime_pct": 100.0,
-      "uptime_seconds": 86400,
-      "total_seconds": 86400,
-      "bad_shutdowns": 0,
-      "status": "online"
-    },
-    {
-      "date": "2026-09-14",
-      "weekday": 0,
-      "uptime_pct": 100.0,
-      "uptime_seconds": 9840,
-      "total_seconds": 9840,
-      "bad_shutdowns": 0,
-      "status": "online"
+      "rowid": 1,
+      "bootid": "0a4c7b37-097d-4cb0-b44b-1f38e34a135d",
+      "btime": 1769622732,
+      "btime_date": "2026-01-29 00:52:12",
+      "uptime_seconds": 491,
+      "uptime_formatted": "8m 11s",
+      "rntime": 491,
+      "slptime": 0,
+      "offbtime": 1769623223,
+      "offbtime_date": "2026-01-29 01:00:23",
+      "endst": 1,
+      "shutdown_state": "OK",
+      "downtime_seconds": 0,
+      "downtime_formatted": "0s",
+      "kernel": "Linux-6.12.62+rpt-rpi-v8-aarch64-with-glibc2.41"
     }
   ]
 }
 ```
-
-- `uptime_pct`: `null` if the day was before the machine's recorded initial boot, or `0.0` to `100.0`.
-- `status`: `"online"`, `"offline"`, or `"unrecorded"`.
 

@@ -17,159 +17,75 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="style.css?v=0.3.0">
+  <link rel="stylesheet" href="style.css?v=0.3.1">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2240%22 fill=%22%2310b981%22/%3E%3C/svg%3E">
 </head>
 <body>
   <div class="container" id="main-container">
-    <div class="status-card">
+    <!-- 1. Current Status Badge (Floating Center Rectangle) -->
+    <div class="status-card" id="status-card">
       <div class="card-header">
         <h1 id="machine-name">Machine</h1>
         <span class="indicator-dot" title="Online"></span>
       </div>
       <div class="divider">────────────────────────</div>
 
-      <!-- Navigation Tabs -->
-      <div class="nav-tabs" id="nav-tabs">
-        <button type="button" class="tab-btn active" id="btn-tab-overview" onclick="switchTab('overview')">Overview</button>
-        <button type="button" class="tab-btn" id="btn-tab-grid" onclick="switchTab('grid')">Availability Grid</button>
-        <button type="button" class="tab-btn" id="btn-tab-timeline" onclick="switchTab('timeline')">90-Day Timeline</button>
-      </div>
-
-      <!-- TAB 1: OVERVIEW -->
-      <div id="tab-content-overview">
-        <div class="stat-group">
-          <div class="stat-row">
-            <span class="label">System</span>
-            <span class="value" id="system-os">--</span>
-          </div>
-          <div class="stat-row">
-            <span class="label">Kernel</span>
-            <span class="value" id="kernel-version">--</span>
-          </div>
-          <div class="stat-row">
-            <span class="label">Architecture</span>
-            <span class="value" id="architecture">--</span>
-          </div>
-          <div class="stat-row">
-            <span class="label">Uptime</span>
-            <span class="value" id="uptime">--</span>
-          </div>
-          <div class="stat-row" id="row-system-life" style="display: none;">
-            <span class="label">System life</span>
-            <span class="value link-value" id="system-life" title="Click to view availability timeline" onclick="switchTab('grid')">--</span>
-          </div>
-          <div class="stat-row" id="row-system-uptime" style="display: none;">
-            <span class="label">System uptime</span>
-            <span class="value link-value" id="system-uptime-rate" title="Click to view availability timeline" onclick="switchTab('timeline')">--</span>
-          </div>
+      <div class="stat-group">
+        <div class="stat-row">
+          <span class="label">System</span>
+          <span class="value" id="system-os">--</span>
         </div>
-
-        <div class="divider-sub"></div>
-
-        <div class="stat-group">
-          <div class="stat-row">
-            <span class="label">Application</span>
-            <span class="value" id="app-version">--</span>
-          </div>
-          <div class="stat-row">
-            <span class="label">Status</span>
-            <span class="value" id="status-version">--</span>
-          </div>
-          <div class="stat-row">
-            <span class="label">Updater</span>
-            <span class="value" id="updater-version">--</span>
-          </div>
+        <div class="stat-row">
+          <span class="label">Kernel</span>
+          <span class="value" id="kernel-version">--</span>
         </div>
-
-        <div class="divider-sub"></div>
-
-        <div class="update-status-row">
-          <span class="label">Updates available:</span>
-          <span class="update-badge" id="updates-available">--</span>
+        <div class="stat-row">
+          <span class="label">Architecture</span>
+          <span class="value" id="architecture">--</span>
         </div>
-
-        <div class="actions">
-          <button id="btn-check" class="btn" type="button">[Check]</button>
-          <button id="btn-update" class="btn btn-primary" type="button">[Update]</button>
+        <div class="stat-row">
+          <span class="label">Uptime</span>
+          <span class="value" id="uptime">--</span>
+        </div>
+        <div class="stat-row" id="row-system-life" style="display: none;">
+          <span class="label">System life</span>
+          <span class="value link-value" id="system-life" title="Toggle annual availability grid" onclick="toggleCard('grid')">--</span>
+        </div>
+        <div class="stat-row" id="row-system-uptime" style="display: none;">
+          <span class="label">System uptime</span>
+          <span class="value link-value" id="system-uptime-rate" title="Toggle 90-day timeline" onclick="toggleCard('timeline')">--</span>
         </div>
       </div>
 
-      <!-- TAB 2: AVAILABILITY GRID (Heatmap) -->
-      <div id="tab-content-grid" style="display: none;">
-        <div class="history-stats-grid">
-          <div class="history-stat-box">
-            <span class="h-label">Uptime Rate</span>
-            <span class="h-val accent" id="grid-rate">--</span>
-          </div>
-          <div class="history-stat-box">
-            <span class="h-label">Monitored</span>
-            <span class="h-val" id="grid-days">--</span>
-          </div>
-          <div class="history-stat-box">
-            <span class="h-label">Bad Stops</span>
-            <span class="h-val" id="grid-bad">--</span>
-          </div>
-        </div>
+      <div class="divider-sub"></div>
 
-        <div class="heatmap-header">
-          <span>Annual Availability (Tuptime)</span>
-          <div class="heatmap-legend">
-            <span>Down</span>
-            <span class="legend-box" style="background:#3f3f46;"></span>
-            <span class="legend-box" style="background:#f59e0b;"></span>
-            <span class="legend-box" style="background:#34d399;"></span>
-            <span class="legend-box" style="background:#10b981;"></span>
-            <span>100%</span>
-          </div>
+      <div class="stat-group">
+        <div class="stat-row">
+          <span class="label">Application</span>
+          <span class="value" id="app-version">--</span>
         </div>
-
-        <div class="heatmap-scroll">
-          <div id="heatmap-grid-container" class="heatmap-grid">
-            <!-- Injected via app.js -->
-          </div>
+        <div class="stat-row">
+          <span class="label">Status</span>
+          <span class="value" id="status-version">--</span>
         </div>
-
-        <div id="grid-tooltip" class="heatmap-tooltip">
-          <span>Hover or tap a cell to inspect daily availability.</span>
+        <div class="stat-row">
+          <span class="label">Updater</span>
+          <span class="value" id="updater-version">--</span>
         </div>
       </div>
 
-      <!-- TAB 3: 90-DAY TIMELINE BARS -->
-      <div id="tab-content-timeline" style="display: none;">
-        <div class="history-stats-grid">
-          <div class="history-stat-box">
-            <span class="h-label">90-Day Rate</span>
-            <span class="h-val accent" id="timeline-rate">--</span>
-          </div>
-          <div class="history-stat-box">
-            <span class="h-label">Monitored</span>
-            <span class="h-val">90 Days</span>
-          </div>
-          <div class="history-stat-box">
-            <span class="h-label">Incidents</span>
-            <span class="h-val" id="timeline-incidents">--</span>
-          </div>
-        </div>
+      <div class="divider-sub"></div>
 
-        <div class="heatmap-header">
-          <span>90-Day Continuous Timeline</span>
-          <span id="timeline-status-summary" style="color: #10b981;">Operational</span>
-        </div>
+      <div class="update-status-row">
+        <span class="label">Updates available:</span>
+        <span class="update-badge" id="updates-available">--</span>
+      </div>
 
-        <div class="timeline-container" id="timeline-bars-container">
-          <!-- 90 bars injected via app.js -->
-        </div>
-
-        <div class="timeline-labels">
-          <span>90 days ago</span>
-          <span>45 days ago</span>
-          <span>Today</span>
-        </div>
-
-        <div id="timeline-tooltip" class="heatmap-tooltip">
-          <span>Hover over any bar to view 24-hour window status.</span>
-        </div>
+      <div class="actions">
+        <button id="btn-check" class="btn" type="button">[Check]</button>
+        <button id="btn-update" class="btn btn-primary" type="button">[Update]</button>
+        <button id="btn-toggle-grid" class="btn btn-secondary" type="button" onclick="toggleCard('grid')">[Grid]</button>
+        <button id="btn-toggle-timeline" class="btn btn-secondary" type="button" onclick="toggleCard('timeline')">[Timeline]</button>
       </div>
 
       <div id="action-feedback" class="action-feedback"></div>
@@ -178,7 +94,80 @@
         <span class="footer-links"> &middot; <a id="api-link" href="api/status" target="_blank">API</a></span>
       </div>
     </div>
+
+    <!-- 2. Additional Rectangle Box Below: Annual Availability Grid -->
+    <div class="extra-card" id="card-availability-grid" style="display: none;">
+      <div class="extra-card-header">
+        <div class="extra-card-title">
+          <span>Annual Availability Grid</span>
+          <span class="badge-sub" id="grid-years-count">--</span>
+        </div>
+        <button type="button" class="btn-close" onclick="toggleCard('grid')" title="Close">&times;</button>
+      </div>
+      <div class="divider">────────────────────────</div>
+
+      <div class="heatmap-legend-bar">
+        <span>Tuptime Annual History (365 Days/Year)</span>
+        <div class="heatmap-legend">
+          <span>Down</span>
+          <span class="legend-box" style="background:#3f3f46;"></span>
+          <span class="legend-box" style="background:#f59e0b;"></span>
+          <span class="legend-box" style="background:#34d399;"></span>
+          <span class="legend-box" style="background:#10b981;"></span>
+          <span>100%</span>
+        </div>
+      </div>
+
+      <div id="multi-year-grid-container" class="multi-year-container">
+        <!-- Rendered by app.js for each year in database -->
+      </div>
+
+      <div id="grid-tooltip" class="heatmap-tooltip">
+        <span>Hover or tap any day cell to inspect recorded availability.</span>
+      </div>
+    </div>
+
+    <!-- 3. Additional Rectangle Box Below: 90-Day Continuous Timeline -->
+    <div class="extra-card" id="card-timeline" style="display: none;">
+      <div class="extra-card-header">
+        <div class="extra-card-title">
+          <span>90-Day Continuous Timeline</span>
+          <span id="timeline-status-summary" style="color: #10b981;">Operational</span>
+        </div>
+        <button type="button" class="btn-close" onclick="toggleCard('timeline')" title="Close">&times;</button>
+      </div>
+      <div class="divider">────────────────────────</div>
+
+      <div class="history-stats-grid">
+        <div class="history-stat-box">
+          <span class="h-label">90-Day Rate</span>
+          <span class="h-val accent" id="timeline-rate">--</span>
+        </div>
+        <div class="history-stat-box">
+          <span class="h-label">Monitored</span>
+          <span class="h-val">90 Days</span>
+        </div>
+        <div class="history-stat-box">
+          <span class="h-label">Incidents</span>
+          <span class="h-val" id="timeline-incidents">--</span>
+        </div>
+      </div>
+
+      <div class="timeline-container" id="timeline-bars-container">
+        <!-- 90 bars injected via app.js -->
+      </div>
+
+      <div class="timeline-labels">
+        <span>90 days ago</span>
+        <span>45 days ago</span>
+        <span>Today</span>
+      </div>
+
+      <div id="timeline-tooltip" class="heatmap-tooltip">
+        <span>Hover over any bar to view 24-hour window status.</span>
+      </div>
+    </div>
   </div>
-  <script src="app.js?v=0.3.0"></script>
+  <script src="app.js?v=0.3.1"></script>
 </body>
 </html>

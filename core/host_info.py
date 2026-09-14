@@ -13,7 +13,7 @@ import sqlite3
 import time
 from typing import Any, Dict, Optional
 
-STATUS_VERSION = "v0.3.0"
+STATUS_VERSION = "v0.3.1"
 
 # In-memory state for update checking
 _update_state = {
@@ -168,8 +168,8 @@ def _format_tuptime_duration(seconds: int) -> str:
     return " ".join(parts)
 
 
-def get_tuptime() -> Dict[str, Any]:
-    """Inspect historical uptime statistics from tuptime SQLite database if available."""
+def _find_tuptime_db() -> Optional[str]:
+    """Find tuptime SQLite database path from common mount points or environment override."""
     db_paths = []
     custom_db = os.environ.get("TUPTIME_DB")
     if custom_db:
@@ -180,13 +180,15 @@ def get_tuptime() -> Dict[str, Any]:
         "/host/etc/tuptime/tuptime.db",
         "/etc/tuptime/tuptime.db",
     ])
-
-    target_db = None
     for p in db_paths:
         if os.path.isfile(p):
-            target_db = p
-            break
+            return p
+    return None
 
+
+def get_tuptime() -> Dict[str, Any]:
+    """Inspect historical uptime statistics from tuptime SQLite database if available."""
+    target_db = _find_tuptime_db()
     if not target_db:
         return {
             "available": False,
@@ -260,36 +262,92 @@ def get_tuptime() -> Dict[str, Any]:
         }
 
 
-def get_uptime_history(days: int = 90) -> Dict[str, Any]:
-    """Calculate daily uptime percentages, total uptime seconds, and bad shutdowns over past N days from tuptime.db."""
+def get_tuptime_entries() -> Dict[str, Any]:
+    """Return raw and formatted records from tuptime.db as JSON."""
+    target_db = _find_tuptime_db()
+    if not target_db:
+        return {
+            "available": False,
+            "count": 0,
+            "entries": [],
+            "reason": "tuptime database not found (/host/var/lib/tuptime/tuptime.db). Mount /var/lib/tuptime in docker-compose.yml",
+        }
+
+    try:
+        try:
+            conn = sqlite3.connect(f"file:{target_db}?mode=ro", uri=True, timeout=2.0)
+        except Exception:
+            conn = sqlite3.connect(target_db, timeout=2.0)
+
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        rows = cur.execute(
+            "SELECT rowid, bootid, btime, uptime, rntime, slptime, offbtime, endst, downtime, kernel "
+            "FROM tuptime ORDER BY rowid ASC"
+        ).fetchall()
+        conn.close()
+
+        entries = []
+        for r in rows:
+            btime = r["btime"]
+            offbtime = r["offbtime"]
+            uptime = r["uptime"]
+            downtime = r["downtime"]
+            endst = r["endst"]
+
+            btime_str = datetime.datetime.fromtimestamp(btime).strftime("%Y-%m-%d %H:%M:%S") if btime else None
+            offbtime_str = datetime.datetime.fromtimestamp(offbtime).strftime("%Y-%m-%d %H:%M:%S") if offbtime else None
+
+            entries.append({
+                "rowid": r["rowid"],
+                "bootid": r["bootid"],
+                "btime": btime,
+                "btime_date": btime_str,
+                "uptime_seconds": uptime,
+                "uptime_formatted": _format_tuptime_duration(uptime) if uptime is not None else None,
+                "rntime": r["rntime"],
+                "slptime": r["slptime"],
+                "offbtime": offbtime,
+                "offbtime_date": offbtime_str,
+                "endst": endst,
+                "shutdown_state": "OK" if endst == 1 else ("BAD" if endst == 0 else "UNKNOWN"),
+                "downtime_seconds": downtime,
+                "downtime_formatted": _format_tuptime_duration(downtime) if downtime is not None else None,
+                "kernel": r["kernel"],
+            })
+
+        return {
+            "available": True,
+            "count": len(entries),
+            "entries": entries,
+        }
+    except Exception as e:
+        return {
+            "available": False,
+            "count": 0,
+            "entries": [],
+            "reason": f"error reading tuptime database: {str(e)}",
+        }
+
+
+def get_uptime_history(days: int = 90, year: Optional[Union[int, str]] = None) -> Dict[str, Any]:
+    """Calculate daily uptime percentages, total uptime seconds, and bad shutdowns.
+    Supports either past N days (for timeline) or full 365-day grids for all concerned years (for availability grid).
+    """
     if days < 1:
         days = 1
     elif days > 365:
         days = 365
 
-    db_paths = []
-    custom_db = os.environ.get("TUPTIME_DB")
-    if custom_db:
-        db_paths.append(custom_db)
-    db_paths.extend([
-        "/host/var/lib/tuptime/tuptime.db",
-        "/var/lib/tuptime/tuptime.db",
-        "/host/etc/tuptime/tuptime.db",
-        "/etc/tuptime/tuptime.db",
-    ])
-
-    target_db = None
-    for p in db_paths:
-        if os.path.isfile(p):
-            target_db = p
-            break
-
+    target_db = _find_tuptime_db()
     if not target_db:
         return {
             "available": False,
             "days": days,
+            "years": [],
             "history": [],
-            "reason": "tuptime database not found (/host/var/lib/tuptime/tuptime.db)",
+            "yearly": {},
+            "reason": "tuptime database not found (/host/var/lib/tuptime/tuptime.db). Mount /var/lib/tuptime in docker-compose.yml",
         }
 
     try:
@@ -309,12 +367,18 @@ def get_uptime_history(days: int = 90) -> Dict[str, Any]:
             return {
                 "available": False,
                 "days": days,
+                "years": [],
                 "history": [],
+                "yearly": {},
                 "reason": "tuptime database is empty",
             }
 
         now = int(time.time())
         first_boot_time = rows[0]["btime"]
+        first_year = datetime.date.fromtimestamp(first_boot_time).year
+        today = datetime.date.today()
+        current_year = today.year
+        all_concerned_years = list(range(current_year, first_year - 1, -1))
 
         boots = []
         for r in rows:
@@ -326,7 +390,105 @@ def get_uptime_history(days: int = 90) -> Dict[str, Any]:
                 "endst": r["endst"],
             })
 
-        today = datetime.date.today()
+        # If year is requested ('all' or specific year integer)
+        if year is not None:
+            if str(year).lower() == "all":
+                target_years = all_concerned_years
+            elif str(year).isdigit():
+                target_years = [int(year)]
+            else:
+                target_years = all_concerned_years
+
+            yearly_data = {}
+            for yr in target_years:
+                start_date = datetime.date(yr, 1, 1)
+                end_date = datetime.date(yr, 12, 31)
+                num_days = (end_date - start_date).days + 1
+
+                yr_history = []
+                yr_tracked_secs = 0
+                yr_up_secs = 0
+                yr_bad_stops = 0
+
+                for day_offset in range(num_days):
+                    d = start_date + datetime.timedelta(days=day_offset)
+                    d_start = int(datetime.datetime.combine(d, datetime.time.min).timestamp())
+                    d_end = int(datetime.datetime.combine(d, datetime.time.max).timestamp())
+
+                    if d > today:
+                        yr_history.append({
+                            "date": str(d),
+                            "weekday": d.weekday(),
+                            "month": d.month,
+                            "day": d.day,
+                            "uptime_pct": None,
+                            "uptime_seconds": 0,
+                            "total_seconds": 86400,
+                            "bad_shutdowns": 0,
+                            "status": "future",
+                        })
+                        continue
+
+                    if d_end < first_boot_time:
+                        yr_history.append({
+                            "date": str(d),
+                            "weekday": d.weekday(),
+                            "month": d.month,
+                            "day": d.day,
+                            "uptime_pct": None,
+                            "uptime_seconds": 0,
+                            "total_seconds": 86400,
+                            "bad_shutdowns": 0,
+                            "status": "unrecorded",
+                        })
+                        continue
+
+                    day_window_end = now if d == today else d_end
+                    day_duration = max(1, day_window_end - d_start)
+
+                    day_up = 0
+                    bad_shutdowns = 0
+                    for b in boots:
+                        overlap = max(0, min(b["end"], day_window_end) - max(b["start"], d_start))
+                        day_up += overlap
+                        if b["endst"] == 0 and d_start <= b["end"] <= day_window_end:
+                            bad_shutdowns += 1
+
+                    pct = 100.0 if day_up >= (day_duration - 60) else round((day_up / day_duration) * 100.0, 1)
+                    yr_tracked_secs += day_duration
+                    yr_up_secs += day_up
+                    yr_bad_stops += bad_shutdowns
+
+                    yr_history.append({
+                        "date": str(d),
+                        "weekday": d.weekday(),
+                        "month": d.month,
+                        "day": d.day,
+                        "uptime_pct": min(100.0, pct),
+                        "uptime_seconds": day_up,
+                        "total_seconds": day_duration,
+                        "bad_shutdowns": bad_shutdowns,
+                        "status": "online" if pct > 0 else "offline",
+                    })
+
+                yr_rate = round((yr_up_secs * 100.0) / yr_tracked_secs, 2) if yr_tracked_secs > 0 else 0.0
+                yearly_data[str(yr)] = {
+                    "year": yr,
+                    "overall_rate": yr_rate,
+                    "overall_rate_formatted": f"{yr_rate:.2f}%",
+                    "total_bad_shutdowns": yr_bad_stops,
+                    "days": len(yr_history),
+                    "history": yr_history,
+                }
+
+            return {
+                "available": True,
+                "mode": "yearly",
+                "years": target_years,
+                "yearly": yearly_data,
+            }
+
+        # Otherwise, calculate continuous past N days (for timeline)
         history = []
         total_tracked_secs = 0
         total_up_secs = 0
@@ -377,7 +539,9 @@ def get_uptime_history(days: int = 90) -> Dict[str, Any]:
 
         return {
             "available": True,
+            "mode": "continuous",
             "days": days,
+            "years": all_concerned_years,
             "overall_rate": overall_rate,
             "overall_rate_formatted": f"{overall_rate:.2f}%",
             "total_bad_shutdowns": total_bad_shutdowns,
@@ -387,7 +551,9 @@ def get_uptime_history(days: int = 90) -> Dict[str, Any]:
         return {
             "available": False,
             "days": days,
+            "years": [],
             "history": [],
+            "yearly": {},
             "reason": f"error computing uptime history: {str(e)}",
         }
 

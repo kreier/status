@@ -51,9 +51,9 @@ class TestHostInfo(unittest.TestCase):
         for k in ["APPLICATION_VERSION", "APP_VERSION", "STATUS_VERSION", "UPDATER_VERSION"]:
             os.environ.pop(k, None)
         versions = host_info.get_versions()
-        self.assertEqual(versions["status"], "v0.3.0")
+        self.assertEqual(versions["status"], "v0.3.1")
         self.assertEqual(versions["updater"], "v0.1.0")
-        self.assertEqual(versions["application"], "v0.3.0")
+        self.assertEqual(versions["application"], "v0.3.1")
 
     def test_uptime_history(self):
         hist = host_info.get_uptime_history(days=30)
@@ -62,6 +62,20 @@ class TestHostInfo(unittest.TestCase):
         self.assertIn("days", hist)
         self.assertEqual(hist["days"], 30)
         self.assertIn("history", hist)
+
+    def test_uptime_history_yearly(self):
+        hist = host_info.get_uptime_history(year="all")
+        self.assertIsInstance(hist, dict)
+        self.assertIn("available", hist)
+        self.assertIn("years", hist)
+        self.assertIn("yearly", hist)
+
+    def test_tuptime_entries(self):
+        res = host_info.get_tuptime_entries()
+        self.assertIsInstance(res, dict)
+        self.assertIn("available", res)
+        self.assertIn("entries", res)
+        self.assertIn("count", res)
 
 
 if __name__ == "__main__":
