@@ -14,7 +14,6 @@ jobs:
       - name: Delete untagged container image versions (batch 1)
         uses: actions/delete-package-versions@v5
         with:
-          node-version: '24'
           package-name: 'status'
           package-type: 'container'
           min-versions-to-keep: 0
@@ -24,7 +23,6 @@ jobs:
         uses: actions/delete-package-versions@v5
         continue-on-error: true
         with:
-          node-version: '24'
           package-name: 'status'
           package-type: 'container'
           min-versions-to-keep: 0
