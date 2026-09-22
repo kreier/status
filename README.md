@@ -37,16 +37,23 @@ Updates available: YES
 - **Actions & API**: Interactive `[Check]` and `[Update]` buttons powered by an extensible `/status/api` REST endpoint.
 - **Dual Routing**: Functions seamlessly at direct local URLs (`http://<host>/status`) and behind reverse proxies like Traefik (`https://<host>.hv.io.vn/status/`).
 
-## Quick Start (Docker Compose)
+## Quick Start: Standalone (No Traefik Needed)
 
-We recommend deploying in `/srv/status` (or `/src/status`) to provide a clean, predictable location for `systemd` automation:
+Works immediately out of the box on any Docker host with zero reverse proxy requirements:
 
 ```bash
-sudo mkdir -p /srv/status/trigger && sudo chmod 777 /srv/status/trigger
+# 1. Clone repository or create deployment folder
+git clone https://github.com/kreier/status.git /srv/status
 cd /srv/status
+
+# 2. Create update trigger directory (optional for one-click updates)
+sudo mkdir -p trigger && sudo chmod 777 trigger
+
+# 3. Launch container
+docker compose up -d
 ```
 
-Create `docker-compose.yml`:
+The default `docker-compose.yml` runs standalone on port **8000**:
 
 ```yaml
 services:
@@ -55,36 +62,42 @@ services:
     container_name: status
     restart: unless-stopped
     ports:
-      - "80:8000"
+      - "8000:8000"  # Direct access: http://<host>:8000/status
     volumes:
-      # Read-only mounts to inspect host metrics
       - /etc/os-release:/host/etc/os-release:ro
       - /etc/hostname:/host/etc/hostname:ro
       - /proc:/host/proc:ro
-      # Optional: mount host tuptime database if tuptime is installed
       - /var/lib/tuptime:/host/var/lib/tuptime:ro
-      # Mount trigger directory for one-click updates (Method B)
       - ./trigger:/host/trigger:rw
     environment:
       - MACHINE_NAME=RK3229 # Optional override (otherwise detected automatically)
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.status.rule=(Host(`rk3229.hv.io.vn`) || Host(`rk3229`) || Host(`localhost`)) && PathPrefix(`/status`)"
-      - "traefik.http.routers.status.entrypoints=web,websecure"
-      - "traefik.http.routers.status.tls=true"
-      - "traefik.http.services.status.loadbalancer.server.port=8000"
-```
-
-Start the container:
-
-```bash
-docker compose up -d
 ```
 
 Access the dashboard:
-- Locally: `http://<machine-ip-or-hostname>/status`
-- Reverse proxy (Traefik): `https://rk3229.hv.io.vn/status/`
-- API endpoint: `http://<host>/status/api/status`
+- Direct local URL: `http://<machine-ip-or-hostname>:8000/status` (or `http://<host>:8000/`)
+- API endpoint: `http://<host>:8000/status/api/status`
+
+*(Tip: If port 80 is free and unprivileged binding is enabled on your host, you can switch the port mapping to `"80:8000"` to access directly via `http://<host>/status`).*
+
+---
+
+## Deploying Behind Traefik Reverse Proxy (HTTPS + Let's Encrypt)
+
+If you run a reverse proxy like Traefik to manage SSL certificates across containers, use `docker-compose.traefik.yml`:
+
+1. Ensure Traefik is running and the shared network `traefik-net` exists (see [examples/traefik/](examples/traefik/) for full Traefik setup).
+2. Start the status service using the Traefik compose configuration:
+
+```bash
+docker compose -f docker-compose.traefik.yml up -d
+```
+
+In `docker-compose.traefik.yml`:
+- **No host port mapping:** Status connects directly to `traefik-net`, eliminating port 80 collisions.
+- **Automatic Let's Encrypt TLS:** Traefik handles certificate provisioning and HTTPS routing.
+- **Access URL:** `https://<your-domain>/status/`
+
+See [examples/traefik/README.md](examples/traefik/README.md) for full setup instructions, DNS configuration, and security recommendations.
 
 ## Multi-Architecture Container Support
 

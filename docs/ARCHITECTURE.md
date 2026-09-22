@@ -25,8 +25,9 @@
 The host status container is packaged as a single, multi-architecture image (`ghcr.io/kreier/status`) that runs on any machine via Docker Compose:
 
 1. **Host Inspection**: The container inspects the underlying machine using read-only host mounts (`/etc/os-release`, `/etc/hostname`, `/proc`), extracting OS distribution, kernel, architecture, and uptime.
-2. **Web & API Server**: An embedded web server (`app.py`) serves the static dashboard (`frontend/`) and the `/status/api` JSON endpoints.
-3. **Dual Routing**: Operates seamlessly both directly (`http://<host>/status`) and behind reverse proxies like Traefik (`https://<host>.hv.io.vn/status/`) with built-in subpath handling.
+3. **Dual Routing & Flexible Deployment Modes**:
+   - **Standalone (Out of the box)**: Direct host port mapping (`8000:8000` or `80:8000`) requiring no external reverse proxy or special network configuration.
+   - **Reverse Proxy (Traefik / Cloudflare Tunnel)**: Native integration via `docker-compose.traefik.yml` connecting across `traefik-net` without exposing host ports. Subpaths (`/` and `/status`) resolve automatically with zero path-stripping required.
 4. **Action Handlers**: Provides check and update endpoints (`/status/api/check`, `/status/api/update`) to coordinate maintenance.
 
 ## Multi-container Collector Architecture (Legacy / Composite)

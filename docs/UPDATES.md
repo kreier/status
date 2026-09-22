@@ -99,7 +99,7 @@ services:
     container_name: status
     restart: unless-stopped
     ports:
-      - "80:8000"
+      - "8000:8000"  # Or "80:8000" if port 80 is available on the host
     volumes:
       - /etc/os-release:/host/etc/os-release:ro
       - /etc/hostname:/host/etc/hostname:ro
@@ -108,12 +108,7 @@ services:
       - ./trigger:/host/trigger:rw
     environment:
       - MACHINE_NAME=RK3229 # Or PI4
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.status.rule=(Host(`rk3229.hv.io.vn`) || Host(`rk3229`) || Host(`localhost`)) && PathPrefix(`/status`)"
-      - "traefik.http.routers.status.entrypoints=web,websecure"
-      - "traefik.http.routers.status.tls=true"
-      - "traefik.http.services.status.loadbalancer.server.port=8000"
+    # Note: If deploying behind Traefik, use docker-compose.traefik.yml instead
 ```
 
 #### Step 3: Create `/usr/local/bin/status-updater.sh`
