@@ -5,6 +5,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- Replaced `actions/delete-package-versions` in `.github/workflows/cleanup-packages.yml` with `dataaxiom/ghcr-cleanup-action@v1`. The previous action deleted child platform manifests of multi-architecture container images (`amd64`, `arm64`, `arm/v7`), resulting in missing manifest errors (404) during Docker pulls on target devices.
+
 ## [0.3.3] - 2026-09-14
 
 ### Added

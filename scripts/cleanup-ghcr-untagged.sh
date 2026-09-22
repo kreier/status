@@ -20,6 +20,10 @@ PACKAGE_NAME="${2:-status}"
 
 echo "=== GHCR Untagged Version Cleanup ==="
 echo "Target: ghcr.io/${OWNER}/${PACKAGE_NAME}"
+echo "NOTE: Multi-arch images store child platform manifests (amd64, arm64, armv7) without individual tags."
+echo "Deleting untagged versions via raw API may delete platform manifests of tagged images."
+echo "Recommendation: Use .github/workflows/cleanup-packages.yml (dataaxiom/ghcr-cleanup-action) instead."
+echo ""
 
 # Verify gh CLI is installed
 if ! command -v gh &>/dev/null; then
