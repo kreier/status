@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **Dedicated Traefik Configuration (`docker-compose.traefik.yml`)**: Clean deployment configuration for running status behind Traefik reverse proxy on internal network `traefik-net` without exposing host ports.
+- **Traefik Stack Example & Guide (`examples/traefik/`)**: Complete turnkey Traefik reverse proxy stack (`examples/traefik/docker-compose.yml`) and setup guide (`examples/traefik/README.md`) covering Let's Encrypt TLS challenge, strict `acme.json` permissions (`chmod 600`), DNS requirements, and dashboard security.
+
+### Changed
+- **Decoupled Standalone Deployment (`docker-compose.yml`)**: Default compose configuration now works immediately out of the box on port `8000:8000` (with `80:8000` option) without requiring Traefik or reverse proxy configurations.
+- **Documentation**: Updated `README.md`, `docs/ARCHITECTURE.md`, and `docs/UPDATES.md` with standalone out-of-the-box instructions and reverse proxy integration options.
+
 ### Fixed
 - Replaced `actions/delete-package-versions` in `.github/workflows/cleanup-packages.yml` with `dataaxiom/ghcr-cleanup-action@v1`. The previous action deleted child platform manifests of multi-architecture container images (`amd64`, `arm64`, `arm/v7`), resulting in missing manifest errors (404) during Docker pulls on target devices.
 

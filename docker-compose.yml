@@ -4,8 +4,10 @@ services:
     container_name: status
     restart: unless-stopped
     ports:
-      # Direct local access, e.g. http://rk3229/status or http://<ip>/status
-      - "80:8000"
+      # Default standalone direct access: http://<ip>:8000/ or http://<ip>:8000/status
+      - "8000:8000"
+      # Alternatively, map to port 80 if available on host (e.g. http://<ip>/status):
+      # - "80:8000"
     volumes:
       # Read-only host mounts for system inspection
       - /etc/os-release:/host/etc/os-release:ro
@@ -28,12 +30,9 @@ services:
       # - APPLICATION_VERSION=v0.1.0  # Or mount - ./app_version.txt:/host/app/version.txt:ro
       # - UPDATER_VERSION=v0.1.0      # Or automatically stamped by systemd updater
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.status.rule=(Host(`rk3229.hv.io.vn`) || Host(`rk3229`) || Host(`localhost`)) && PathPrefix(`/status`)"
-      - "traefik.http.routers.status.entrypoints=web,websecure"
-      - "traefik.http.routers.status.tls=true"
-      - "traefik.http.services.status.loadbalancer.server.port=8000"
       - "com.centurylinklabs.watchtower.enable=true"
+      # For deploying behind Traefik reverse proxy, use docker-compose.traefik.yml
+
     networks:
       - default
 

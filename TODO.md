@@ -14,8 +14,9 @@ Rough phases, roughly in order. Not all details are decided - pick the next unch
 - [x] Web server and extensible API (`app.py`, `/status/api`)
 - [x] Status card UI with interactive Check and Update actions
 - [x] Multi-architecture Docker image publishing (`ghcr.io/kreier/status` with `armhf`/`arm64`/`amd64`)
-- [x] Standard `docker-compose.yml` supporting host mounts, local direct access, and Traefik reverse proxy
-- [x] Deploy to RK3229 and Pi 4 with Docker Compose and Traefik
+- [x] Standard `docker-compose.yml` supporting standalone host mounts and local direct access out of the box
+- [x] Dedicated Traefik reverse proxy deployment (`docker-compose.traefik.yml`) and guide (`examples/traefik/`)
+- [x] Deploy to RK3229 and Pi 4 with Docker Compose (Standalone & Traefik)
 - [x] Automated update checking against GitHub Releases
 - [x] On-demand container updater integration (Watchtower / host script)
 - [x] Automated and CLI-based GHCR untagged package cleanup

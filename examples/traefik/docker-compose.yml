@@ -1,0 +1,39 @@
+# Standalone Traefik Reverse Proxy Stack with Let's Encrypt TLS
+# Recommended directory: ~/traefik/ or /srv/traefik/
+
+services:
+  traefik:
+    image: traefik:v3.1
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=traefik-net"
+      # HTTP and HTTPS entrypoints
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      # Optional: automatically redirect HTTP (port 80) to HTTPS (port 443)
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      # ACME Let's Encrypt TLS challenge (Replace you@example.com with your email)
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.email=you@example.com"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      # Traefik Dashboard (Disabled by default for public security; see README.md to enable with auth)
+      # - "--api.dashboard=true"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    networks:
+      - traefik-net
+
+networks:
+  traefik-net:
+    name: traefik-net
+    # Setting external: false ensures docker compose creates the network automatically
+    # if it doesn't already exist.
+    external: false
