@@ -1,6 +1,6 @@
 # status
 
-A lightweight host status service and dashboard for physical and virtual machines (e.g. Rockchip RK3229 TV boxes running Armbian, Raspberry Pis, home servers). Distributed as a multi-architecture container via GitHub Container Registry (`ghcr.io/kreier/status`).
+A lightweight host status service and dashboard for physical and virtual machines (e.g. TV boxes with Rockchip RK3229 or Amlogic S905W running Armbian, Raspberry Pis, home servers). Distributed as a multi-architecture container via GitHub Container Registry (`ghcr.io/kreier/status`).
 
 - 📖 **Documentation:** [kreier.github.io/status](https://kreier.github.io/status/)
 - 🟢 **Example live page:** [rk3229.hv.io.vn/status/](https://rk3229.hv.io.vn/status/) or local [http://rk3229/status](http://rk3229/status)
